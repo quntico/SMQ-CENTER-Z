@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  --color-primary: 255 215 0;
+  --color-primary-hover: 255 237 78;
+  --logo-height: calc(1.5 * 40px); /* Define base logo height for consistent scaling */
+  --color-led-blue: 0 191 255; /* Bright blue for LED effect */
+}
+
+.theme-nova {
+  --color-primary: 255 215 0;
+  --color-primary-hover: 255 237 78;
+}
+
+.theme-smq {
+  --color-primary: 0 124 240;
+  --color-primary-hover: 0 150 255;
+}
+
+.theme-scr700 {
+  --color-primary: 255 215 0;
+  --color-primary-hover: 255 237 78;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+body {
+  @apply bg-black text-white;
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+  overscroll-behavior-y: contain;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+#root {
+  overflow-x: hidden;
+}
+
+/* Header logo styles */
+.header-logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: var(--logo-height); /* Set container height to match logo height */
+}
+
+/* Apply specific styles to the logo image within the header and related classes */
+header .header-logo,
+.navbar .header-logo, /* Assuming .navbar might contain a logo, applying for consistency */
+.header-logo {
+  height: var(--logo-height) !important;
+  width: var(--logo-width, auto) !important; /* Use CSS variable for width, default auto */
+  object-fit: contain !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: none !important;
+}
+
+/* Ensure any direct img tags within header or navbar also adhere if not using .header-logo */
+header img,
+.navbar img {
+  height: var(--logo-height) !important;
+  width: var(--logo-width, auto) !important;
+  object-fit: contain !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: none !important;
+}
+
+/* Mobile optimization - reduce everything by 10% */
+@media (max-width: 768px) {
+  html {
+    font-size: 90%;
+  }
+  
+  body {
+    padding-left: 0; 
+    padding-right: 0;
+  }
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--color-primary));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-primary-hover));
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes marquee-reverse {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(0%); }
+}
+
+.animate-marquee-once {
+  display: flex;
+  animation: marquee 20s linear 1;
+  min-width: 200%;
+}
+
+.animate-marquee-reverse-once {
+  display: flex;
+  animation: marquee-reverse 20s linear 1;
+  min-width: 200%;
+}
+
+.text-led-blue {
+  color: rgb(var(--color-led-blue));
+  text-shadow: 0 0 5px rgba(var(--color-led-blue), 0.7), 0 0 10px rgba(var(--color-led-blue), 0.5);
+}
