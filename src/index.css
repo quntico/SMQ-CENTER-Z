@@ -156,3 +156,26 @@
 .dark .border-gray-800 {
   border-color: hsl(217.2 32.6% 17.5%) !important; /* Consistent border color */
 }
+
+/* Electric Blue LED Effect */
+.led-blue-text {
+  color: #00f3ff !important;
+  text-shadow: 0 0 5px rgba(0, 243, 255, 0.7), 0 0 10px rgba(0, 243, 255, 0.5);
+}
+
+.led-blue-box {
+  background-color: rgba(0, 243, 255, 0.1) !important;
+  border-color: rgba(0, 243, 255, 0.5) !important;
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.2), inset 0 0 10px rgba(0, 243, 255, 0.1);
+}
+
+.led-blue-hover:hover {
+  color: #00f3ff !important;
+  text-shadow: 0 0 5px rgba(0, 243, 255, 0.7);
+}
+
+.led-blue-box-hover:hover {
+  background-color: rgba(0, 243, 255, 0.05);
+  border-color: rgba(0, 243, 255, 0.3);
+  box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
+}

@@ -227,6 +227,16 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
   }
 
   const renderActiveComponent = () => {
+    if (activeSection === 'cotizador_page') {
+      return (
+        <CotizadorPage
+          quotationData={quotationData}
+          activeTheme={activeTheme}
+          setThemes={setThemes}
+        />
+      );
+    }
+
     const activeSectionObj = menuItems.find(s => s.id === activeSection);
     const ActiveComponent = activeSectionObj?.Component || componentMap[activeSection] || GenericSection;
 

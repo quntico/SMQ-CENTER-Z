@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  GripVertical, 
-  Eye, 
-  EyeOff, 
-  ArrowUp, 
-  ArrowDown, 
-  Copy, 
-  Trash2, 
+import {
+  GripVertical,
+  Eye,
+  EyeOff,
+  ArrowUp,
+  ArrowDown,
+  Copy,
+  Trash2,
   MoreVertical,
   Edit2
 } from 'lucide-react';
@@ -28,14 +28,14 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 import IconPicker from './IconPicker';
 
-const SidebarItem = ({ 
-  section, 
-  isActive, 
-  onClick, 
-  isCollapsed, 
+const SidebarItem = ({
+  section,
+  isActive,
+  onClick,
+  isCollapsed,
   isEditorMode,
   onVisibilityToggle,
-  
+
   onMoveUp,
   onMoveDown,
   onLabelChange,
@@ -44,9 +44,9 @@ const SidebarItem = ({
   onDelete,
   isFirst,
   isLast,
-  
+
   dragHandleProps,
-  isDragging 
+  isDragging
 }) => {
   const { t } = useLanguage();
   const [isEditingLabel, setIsEditingLabel] = useState(false);
@@ -91,7 +91,7 @@ const SidebarItem = ({
       setTempLabel(displayLabel);
       setIsEditingLabel(false);
     }
-    e.stopPropagation(); 
+    e.stopPropagation();
   };
 
   const itemContent = (
@@ -106,7 +106,7 @@ const SidebarItem = ({
     >
       {/* Drag Handle - Only in Editor Mode */}
       {isEditorMode && !isCollapsed && (
-        <div 
+        <div
           {...dragHandleProps}
           className="cursor-grab active:cursor-grabbing p-1 -ml-1 mr-1 opacity-30 group-hover:opacity-100 transition-opacity"
           onClick={(e) => e.stopPropagation()}
@@ -114,13 +114,13 @@ const SidebarItem = ({
           <GripVertical className="w-4 h-4 text-gray-400" />
         </div>
       )}
-      
-      <IconPicker 
-        value={section.icon} 
-        onChange={onIconChange} 
+
+      <IconPicker
+        value={section.icon}
+        onChange={onIconChange}
         isEditorMode={isEditorMode && !section.isLocked}
         trigger={
-          <div 
+          <div
             className={cn(
               "flex-shrink-0 transition-transform duration-200 p-1 rounded-md",
               isEditorMode && !section.isLocked ? "hover:bg-white/10 cursor-pointer" : ""
@@ -128,48 +128,48 @@ const SidebarItem = ({
             onClick={(e) => isEditorMode && !section.isLocked && e.stopPropagation()}
           >
             <Icon className={cn(
-              "w-5 h-5",
-              isActive && "scale-110 text-primary",
+              "w-5 h-5 led-blue-hover",
+              isActive && "scale-110 led-blue-text",
               isCollapsed && "mx-auto"
             )} />
           </div>
         }
       />
-      
+
       {!isCollapsed && (
         <div className="ml-3 flex-1 overflow-hidden relative">
-           {isEditorMode && isEditingLabel ? (
-             <input
-               ref={inputRef}
-               value={tempLabel}
-               onChange={(e) => setTempLabel(e.target.value)}
-               onBlur={handleSaveLabel}
-               onKeyDown={handleKeyDown}
-               onClick={(e) => e.stopPropagation()}
-               className="w-full bg-gray-900 text-white text-sm px-2 py-1 rounded border border-blue-500 outline-none shadow-lg z-50 relative"
-             />
-           ) : (
-             <span 
-               className={cn(
-                 "block truncate text-sm transition-all duration-200 select-none",
-                 isActive ? "font-semibold text-white" : "text-gray-300",
-                 isEditorMode && !section.isLocked && "hover:text-blue-400 cursor-text" 
-               )}
-               onDoubleClick={(e) => {
-                 if (isEditorMode && !section.isLocked) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsEditingLabel(true);
-                 }
-               }}
-               title={isEditorMode ? "Doble clic para renombrar" : ""}
-             >
-               {displayLabel}
-             </span>
-           )}
+          {isEditorMode && isEditingLabel ? (
+            <input
+              ref={inputRef}
+              value={tempLabel}
+              onChange={(e) => setTempLabel(e.target.value)}
+              onBlur={handleSaveLabel}
+              onKeyDown={handleKeyDown}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full bg-gray-900 text-white text-sm px-2 py-1 rounded border border-blue-500 outline-none shadow-lg z-50 relative"
+            />
+          ) : (
+            <span
+              className={cn(
+                "block truncate text-sm transition-all duration-200 select-none led-blue-hover",
+                isActive ? "font-semibold led-blue-text" : "text-gray-300",
+                isEditorMode && !section.isLocked && "hover:text-blue-400 cursor-text"
+              )}
+              onDoubleClick={(e) => {
+                if (isEditorMode && !section.isLocked) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsEditingLabel(true);
+                }
+              }}
+              title={isEditorMode ? "Doble clic para renombrar" : ""}
+            >
+              {displayLabel}
+            </span>
+          )}
         </div>
       )}
-      
+
       {isActive && !isCollapsed && !isEditorMode && (
         <motion.div
           layoutId="activeIndicator"
@@ -181,67 +181,67 @@ const SidebarItem = ({
       {/* Editor Controls - Only Visible in Editor Mode & Not Collapsed */}
       {isEditorMode && !isCollapsed && (
         <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/90 backdrop-blur-sm rounded-l-md pl-1 shadow-xl border-l border-gray-800/50 absolute right-0 h-full pr-1">
-           
-           {/* Rename Button (Direct Access) */}
-           {!section.isLocked && (
-             <button
-                onClick={(e) => { e.stopPropagation(); setIsEditingLabel(true); }}
-                className="p-1.5 hover:text-blue-400 text-gray-400 transition-colors rounded-md hover:bg-white/5"
-                title="Renombrar"
-             >
-               <Edit2 className="w-3.5 h-3.5" />
-             </button>
-           )}
 
-           {/* Delete Button (Direct Access) */}
-           {!section.isLocked && (
-              <button
-                onClick={onDelete}
-                className="p-1.5 hover:text-red-400 text-gray-400 transition-colors rounded-md hover:bg-white/5"
-                title="Eliminar"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
+          {/* Rename Button (Direct Access) */}
+          {!section.isLocked && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setIsEditingLabel(true); }}
+              className="p-1.5 hover:text-blue-400 text-gray-400 transition-colors rounded-md hover:bg-white/5"
+              title="Renombrar"
+            >
+              <Edit2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {/* Delete Button (Direct Access) */}
+          {!section.isLocked && (
+            <button
+              onClick={onDelete}
+              className="p-1.5 hover:text-red-400 text-gray-400 transition-colors rounded-md hover:bg-white/5"
+              title="Eliminar"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {/* Visibility Toggle */}
+          {!section.isLocked && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onVisibilityToggle(); }}
+              className={cn(
+                "p-1.5 transition-colors rounded-md hover:bg-white/5",
+                isVisible ? "hover:text-blue-400 text-gray-400" : "text-gray-600"
+              )}
+              title={isVisible ? "Ocultar" : "Mostrar"}
+            >
+              {isVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+            </button>
+          )}
+
+          {/* More Actions Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="p-1.5 hover:text-white text-gray-400 transition-colors rounded-md hover:bg-white/5" onClick={(e) => e.stopPropagation()}>
+                <MoreVertical className="w-3.5 h-3.5" />
               </button>
-           )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-gray-900 border-gray-800 text-gray-200 z-[60]">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMoveUp(); }} disabled={isFirst} className="cursor-pointer focus:bg-gray-800">
+                <ArrowUp className="w-4 h-4 mr-2" /> Mover Arriba
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMoveDown(); }} disabled={isLast} className="cursor-pointer focus:bg-gray-800">
+                <ArrowDown className="w-4 h-4 mr-2" /> Mover Abajo
+              </DropdownMenuItem>
 
-           {/* Visibility Toggle */}
-           {!section.isLocked && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onVisibilityToggle(); }}
-                className={cn(
-                  "p-1.5 transition-colors rounded-md hover:bg-white/5",
-                  isVisible ? "hover:text-blue-400 text-gray-400" : "text-gray-600"
-                )}
-                title={isVisible ? "Ocultar" : "Mostrar"}
-              >
-                {isVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-              </button>
-           )}
-
-           {/* More Actions Dropdown */}
-           <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="p-1.5 hover:text-white text-gray-400 transition-colors rounded-md hover:bg-white/5" onClick={(e) => e.stopPropagation()}>
-                  <MoreVertical className="w-3.5 h-3.5" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-gray-900 border-gray-800 text-gray-200 z-[60]">
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMoveUp(); }} disabled={isFirst} className="cursor-pointer focus:bg-gray-800">
-                  <ArrowUp className="w-4 h-4 mr-2" /> Mover Arriba
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMoveDown(); }} disabled={isLast} className="cursor-pointer focus:bg-gray-800">
-                  <ArrowDown className="w-4 h-4 mr-2" /> Mover Abajo
-                </DropdownMenuItem>
-                
-                {!section.isLocked && (
-                  <>
-                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate(e); }} className="cursor-pointer focus:bg-gray-800">
-                      <Copy className="w-4 h-4 mr-2" /> Duplicar
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-           </DropdownMenu>
+              {!section.isLocked && (
+                <>
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate(e); }} className="cursor-pointer focus:bg-gray-800">
+                    <Copy className="w-4 h-4 mr-2" /> Duplicar
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       )}
     </div>
@@ -251,10 +251,10 @@ const SidebarItem = ({
     <motion.div
       layout
       className={cn(
-        "flex items-center px-3 py-2 my-1 rounded-lg transition-all duration-200 border border-transparent",
-        isActive && !isEditorMode 
-          ? "bg-primary/10 border-primary/20" 
-          : "hover:bg-white/5",
+        "flex items-center px-3 py-2 my-1 rounded-lg transition-all duration-200 border border-transparent led-blue-box-hover",
+        isActive && !isEditorMode
+          ? "led-blue-box"
+          : "",
         isEditorMode && isActive && "bg-blue-500/10 border-blue-500/30", // Distinct style for active in editor
         !isVisible && isEditorMode && "opacity-50 grayscale" // Visual cue for hidden items
       )}
