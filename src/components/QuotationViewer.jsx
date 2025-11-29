@@ -34,10 +34,10 @@ import ExclusionesSection from '@/components/sections/ExclusionesSection';
 import CapacidadesSection from '@/components/sections/CapacidadesSection';
 import SCR700Page from '@/components/sections/SCR700Page';
 import ClientesSection from '@/components/sections/ClientesSection';
-import VentajasSection from '@/components/sections/VentajasSection'; 
+import VentajasSection from '@/components/sections/VentajasSection';
 
 const componentMap = {
-  ventajas: VentajasSection, 
+  ventajas: VentajasSection,
   portada: PortadaSection,
   descripcion: DescripcionSection,
   generales: GeneralesSection,
@@ -60,8 +60,8 @@ const componentMap = {
   capacidades: CapacidadesSection,
   scr700_page: SCR700Page,
   clientes: ClientesSection,
-  admin: GenericSection, 
-  servicios_adicionales: GenericSection, 
+  admin: GenericSection,
+  servicios_adicionales: GenericSection,
 };
 
 const defaultSections = [
@@ -77,7 +77,7 @@ const defaultSections = [
   { id: 'analiticas', label: 'Analíticas', icon: 'BarChart', isVisible: true, component: 'admin', adminOnly: true },
   { id: 'ajustes', label: 'Ajustes', icon: 'Settings', isVisible: true, component: 'admin', adminOnly: true },
   { id: 'propuesta', label: 'Propuesta Económica', icon: 'DollarSign', isVisible: true, component: 'propuesta' },
-  
+
   // Hidden/Auxiliary
   { id: 'ventajas', label: 'VENTAJAS', icon: 'Star', isVisible: false, isLocked: true, component: 'ventajas' },
   { id: 'portada', label: 'Home', icon: 'Home', isVisible: false, isLocked: true, component: 'portada' },
@@ -94,13 +94,13 @@ const mergeWithDefaults = (config, themeKey) => {
   let mergedConfig = config
     .filter(s => s.id !== 'propuesta_dinamica') // Explicitly filter out prop_dinamica from DB configs
     .map(s => {
-    if (!defaultConfigMap.has(s.id)) {
-       const baseComponentId = s.component || s.id.split('_copy')[0];
-       const baseConfig = defaultConfigMap.get(baseComponentId) || {};
-       return { ...baseConfig, ...s, component: baseComponentId }; 
-    }
-    return { ...defaultConfigMap.get(s.id), ...s };
-  });
+      if (!defaultConfigMap.has(s.id)) {
+        const baseComponentId = s.component || s.id.split('_copy')[0];
+        const baseConfig = defaultConfigMap.get(baseComponentId) || {};
+        return { ...baseConfig, ...s, component: baseComponentId };
+      }
+      return { ...defaultConfigMap.get(s.id), ...s };
+    });
   const existingIds = new Set(mergedConfig.map(s => s.id));
   defaultSections.forEach(ds => {
     if (!existingIds.has(ds.id)) mergedConfig.push(ds);
@@ -114,7 +114,7 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
   const [themes, setThemes] = useState(isAdminView ? allThemes : { [initialQuotationData.theme_key]: initialQuotationData });
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showCloneModal, setShowCloneModal] = useState(false);
-  const [activeSection, setActiveSection] = useState('descripcion'); 
+  const [activeSection, setActiveSection] = useState('descripcion');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showCommandDialog, setShowCommandDialog] = useState(false);
   const [aiQuery, setAiQuery] = useState('');
@@ -144,7 +144,7 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
   };
 
   const handleHomeClick = useCallback(() => {
-    setActiveSection('descripcion'); 
+    setActiveSection('descripcion');
     const homeEl = document.getElementById('main-content-scroll-area');
     if (homeEl) homeEl.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
@@ -207,11 +207,11 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
   if (!quotationData) return null;
 
   let menuItems = (quotationData.sections_config || defaultSections).map(section => {
-    const cleanCompKey = (section.component || section.id).split('_copy')[0]; 
+    const cleanCompKey = (section.component || section.id).split('_copy')[0];
     return {
       ...section,
       Component: componentMap[cleanCompKey] || componentMap[section.id] || GenericSection,
-      label: section.label || t(`sections.${section.id}`) 
+      label: section.label || t(`sections.${section.id}`)
     };
   });
 
@@ -229,21 +229,21 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
   const renderActiveComponent = () => {
     const activeSectionObj = menuItems.find(s => s.id === activeSection);
     const ActiveComponent = activeSectionObj?.Component || componentMap[activeSection] || GenericSection;
-    
+
     return (
-        <MainContent
-          activeSection={activeSection}
-          setActiveSection={setActiveSection}
-          quotationData={quotationData}
-          aiQuery={aiQuery}
-          setAiQuery={setAiQuery}
-          sections={menuItems}
-          allSectionsData={quotationData.sections_config} // Pass full config including hidden items
-          isEditorMode={isEditorMode && isAdminView}
-          setIsEditorMode={setIsEditorMode}
-          activeTheme={activeTheme}
-          onSectionContentUpdate={setSectionsConfig}
-        />
+      <MainContent
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
+        quotationData={quotationData}
+        aiQuery={aiQuery}
+        setAiQuery={setAiQuery}
+        sections={menuItems}
+        allSectionsData={quotationData.sections_config} // Pass full config including hidden items
+        isEditorMode={isEditorMode && isAdminView}
+        setIsEditorMode={setIsEditorMode}
+        activeTheme={activeTheme}
+        onSectionContentUpdate={setSectionsConfig}
+      />
     );
   };
 
@@ -275,6 +275,7 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
             onAdminLogin={() => isAdminView && setShowPasswordPrompt(true)}
             onAdminLogout={handleAdminLogout}
             isAdminView={isAdminView}
+            onCotizadorClick={() => handleSectionSelect('cotizador_page')}
           />
         </div>
         <div className="flex-1 flex flex-col overflow-hidden">

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronsLeft, ChevronsRight, Settings, Shield, LogOut, Edit } from 'lucide-react';
+import { ChevronsLeft, ChevronsRight, Settings, Shield, LogOut, Edit, Calculator } from 'lucide-react';
 import SidebarItem from './SidebarItem';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -30,6 +30,7 @@ const Sidebar = ({
   onAdminLogin,
   onAdminLogout,
   isAdminView,
+  onCotizadorClick,
 }) => {
   const { t } = useLanguage();
   const [sectionToDelete, setSectionToDelete] = useState(null);
@@ -62,21 +63,21 @@ const Sidebar = ({
 
     const newSections = [...sections];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    
+
     // Swap
     [newSections[index], newSections[targetIndex]] = [newSections[targetIndex], newSections[index]];
     setSections(newSections);
   };
 
   const updateSectionLabel = (id, newLabel) => {
-    const newSections = sections.map(s => 
+    const newSections = sections.map(s =>
       s.id === id ? { ...s, label: newLabel } : s
     );
     setSections(newSections);
   };
 
   const updateSectionIcon = (id, newIcon) => {
-    const newSections = sections.map(s => 
+    const newSections = sections.map(s =>
       s.id === id ? { ...s, icon: newIcon } : s
     );
     setSections(newSections);
@@ -90,7 +91,7 @@ const Sidebar = ({
       label: `${section.label} (Copia)`,
       isVisible: true
     };
-    
+
     const newSections = [...sections];
     newSections.splice(index + 1, 0, newSection);
     setSections(newSections);
@@ -131,10 +132,10 @@ const Sidebar = ({
                 {(provided) => (
                   <div {...provided.droppableProps} ref={provided.innerRef}>
                     {sections.map((section, index) => (
-                      <Draggable 
-                        key={section.id} 
-                        draggableId={section.id} 
-                        index={index} 
+                      <Draggable
+                        key={section.id}
+                        draggableId={section.id}
+                        index={index}
                         isDragDisabled={!isEditorMode || isCollapsed}
                       >
                         {(provided, snapshot) => (
@@ -149,17 +150,17 @@ const Sidebar = ({
                               onClick={() => section.id === 'portada' ? onHomeClick() : onSectionSelect(section.id)}
                               isEditorMode={isEditorMode}
                               onVisibilityToggle={() => toggleSectionVisibility(section.id)}
-                              
+
                               onMoveUp={(e) => { e.stopPropagation(); moveSection(index, 'up'); }}
                               onMoveDown={(e) => { e.stopPropagation(); moveSection(index, 'down'); }}
                               onLabelChange={(val) => updateSectionLabel(section.id, val)}
                               onIconChange={(val) => updateSectionIcon(section.id, val)}
                               onDuplicate={(e) => { e.stopPropagation(); duplicateSection(section, index); }}
                               onDelete={(e) => { e?.stopPropagation?.(); requestDelete(section.id); }}
-                              
+
                               isFirst={index === 0}
                               isLast={index === sections.length - 1}
-                              
+
                               isDragging={snapshot.isDragging}
                               dragHandleProps={provided.dragHandleProps}
                             />
@@ -178,6 +179,13 @@ const Sidebar = ({
             <div className="p-4 border-t border-gray-800 space-y-2 bg-black absolute bottom-0 w-full z-30">
               {isAdminAuthenticated && (
                 <>
+                  <button
+                    onClick={onCotizadorClick}
+                    className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeSection === 'cotizador_page' ? 'bg-blue-600 text-white' : 'hover:bg-gray-800'}`}
+                  >
+                    <Calculator size={20} />
+                    {!isCollapsed && <span className="ml-4 font-semibold">Modo Cotizador</span>}
+                  </button>
                   <button
                     onClick={() => setIsEditorMode(!isEditorMode)}
                     className={`w-full flex items-center p-3 rounded-lg transition-colors ${isEditorMode ? 'bg-green-500/10 text-green-400' : 'hover:bg-gray-800'}`}
