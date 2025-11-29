@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, CheckCircle, Wrench, Ship, Truck } from 'lucide-react';
+import { CheckCircle2, Wrench, Ship, Truck, Calendar as CalendarIcon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import SectionHeader from '@/components/SectionHeader';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -43,7 +44,7 @@ const CronogramaSection = ({ quotationData, sectionData }) => {
         id: 1,
         title: `${t('cronograma.days')} 1-${phase1_duration}`,
         subtitle: phase1_name,
-        icon: CheckCircle,
+        icon: CheckCircle2,
         start: p1_start,
         end: p1_end,
       },
@@ -84,98 +85,102 @@ const CronogramaSection = ({ quotationData, sectionData }) => {
   const phases = calculateDates(startDate);
 
   return (
-    <div className="py-4 sm:py-12 px-4">
+    <div className="py-12 px-4 bg-black text-white">
       <SectionHeader sectionData={sectionData} />
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         className="max-w-7xl mx-auto"
       >
-        <p className="text-base sm:text-lg text-gray-400 mb-6 sm:mb-12 text-center">
+        <p className="text-gray-400 mb-8 text-center text-lg">
           {t('cronograma.selectDate')}
         </p>
 
-        <div className="mb-6 sm:mb-12 flex justify-center">
+        <div className="mb-16 flex justify-center">
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant={"outline"}
                 className={cn(
-                  "w-full sm:w-[280px] justify-start text-left font-normal bg-[#0a0a0a] border-gray-800 text-white hover:bg-gray-800 hover:text-white text-base sm:text-lg p-4 sm:p-6",
+                  "w-[300px] justify-start text-left font-normal bg-[#0f0f0f] border-gray-800 text-white hover:bg-gray-800 hover:text-white h-14 px-4 text-lg",
                   !startDate && "text-muted-foreground"
                 )}
               >
-                <Calendar className="mr-2 sm:mr-4 h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                <CalendarIcon className="mr-3 h-6 w-6 text-yellow-500" />
                 {startDate ? format(startDate, 'PPP', { locale: dateLocale }) : <span>{t('cronograma.chooseDate')}</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0 bg-black border-gray-700 text-white">
-              <CalendarComponent
+              <Calendar
                 mode="single"
                 selected={startDate}
                 onSelect={setStartDate}
                 initialFocus
                 locale={dateLocale}
+                className="bg-black text-white border border-gray-800"
               />
             </PopoverContent>
           </Popover>
         </div>
         
         {/* --- DESKTOP VIEW --- */}
-        <div className="hidden sm:flex sm:flex-row justify-center items-stretch sm:items-start gap-4 sm:gap-8 mb-6 sm:mb-12 relative">
-            <div className="absolute top-10 left-0 right-0 h-1 bg-gray-800 z-0"></div>
+        <div className="hidden sm:flex sm:flex-row justify-between items-start relative mt-10 px-10">
+            {/* Timeline Line */}
+            <div className="absolute top-12 left-20 right-20 h-[2px] bg-gray-800 z-0"></div>
+            
             {phases.map((phase, index) => (
               <div 
                 key={phase.id}
-                className="flex flex-col items-center gap-0 flex-1 relative z-10 p-0"
+                className="flex flex-col items-center relative z-10 w-1/4"
               >
-                <div className="absolute top-0 left-1/2 -translate-x-1/2">
-                   <motion.div
-                      className="w-20 h-20 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-primary/50 cursor-pointer"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.5 + index * 0.1, type: 'spring' }}
-                      whileHover={{ scale: 1.1, boxShadow: "0 0 25px rgba(var(--color-primary-rgb), 0.8)" }}
-                      whileTap={{ scale: 0.9 }}
-                    >
-                      <phase.icon className="w-10 h-10 text-black" />
-                    </motion.div>
-                </div>
+                {/* Icon Container */}
+                <motion.div
+                   className="w-24 h-24 rounded-full bg-yellow-400 flex items-center justify-center shadow-[0_0_30px_rgba(250,204,21,0.4)] mb-8 border-4 border-black"
+                   initial={{ scale: 0 }}
+                   animate={{ scale: 1 }}
+                   transition={{ delay: 0.2 + index * 0.1, type: 'spring' }}
+                   whileHover={{ scale: 1.1, boxShadow: "0 0 40px rgba(250,204,21,0.6)" }}
+                 >
+                   <phase.icon className="w-10 h-10 text-black" strokeWidth={1.5} />
+                 </motion.div>
 
                 <motion.div
-                  className="text-center pt-24 w-full"
-                  initial={{ opacity: 0, y: 30 }}
+                  className="text-center w-full px-2"
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  transition={{ delay: 0.4 + index * 0.1 }}
                 >
-                  <h3 className="text-xl font-bold text-white mb-1">{phase.title}</h3>
-                  <p className="text-gray-400 mb-2 h-12 flex items-center justify-center text-sm">{phase.subtitle}</p>
-                  <p className="text-primary font-semibold text-xs">{phase.dateRange}</p>
+                  <h3 className="text-xl font-bold text-white mb-2">{phase.title}</h3>
+                  <p className="text-gray-400 text-sm font-medium mb-3 h-10 flex items-start justify-center">{phase.subtitle}</p>
+                  <p className="text-yellow-400 font-bold text-sm">{phase.dateRange}</p>
                 </motion.div>
               </div>
             ))}
         </div>
 
         {/* --- MOBILE VIEW --- */}
-        <div className="sm:hidden relative px-4">
-          <div className="absolute left-12 top-0 bottom-0 w-0.5 bg-primary/30"></div>
+        <div className="sm:hidden relative px-4 space-y-10 pl-6">
+          <div className="absolute left-[34px] top-4 bottom-4 w-0.5 bg-gray-800"></div>
           {phases.map((phase, index) => (
             <motion.div
               key={phase.id}
-              className="flex items-start gap-6 mb-8 relative"
+              className="relative"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 + index * 0.1 }}
             >
-              <div className="flex-shrink-0 z-10">
-                <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-primary/30">
-                  <phase.icon className="w-8 h-8 text-black" />
-                </div>
-              </div>
-              <div className="pt-1">
-                <h3 className="text-xl font-bold text-white">{phase.title}</h3>
-                <p className="text-base text-gray-400 mt-1">{phase.subtitle}</p>
-                <p className="text-sm text-primary font-semibold mt-1">{phase.dateRange}</p>
+              <div className="flex flex-col gap-3">
+                 <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-full bg-yellow-400 flex items-center justify-center shadow-[0_0_15px_rgba(250,204,21,0.4)] shrink-0 relative z-10 border-4 border-black">
+                        <phase.icon className="w-6 h-6 text-black" strokeWidth={1.5} />
+                    </div>
+                    <h3 className="text-lg font-bold text-white">{phase.title}</h3>
+                 </div>
+                 
+                 <div className="pl-[72px]">
+                    <p className="text-gray-400 text-sm font-medium mb-1">{phase.subtitle}</p>
+                    <p className="text-yellow-400 font-bold text-sm">{phase.dateRange}</p>
+                 </div>
               </div>
             </motion.div>
           ))}

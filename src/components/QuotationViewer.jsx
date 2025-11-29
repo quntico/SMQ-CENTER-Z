@@ -26,25 +26,24 @@ import PDFSection from '@/components/sections/PDFSection';
 import GenericSection from '@/components/sections/GenericSection';
 import IASection from '@/components/sections/IASection';
 import CondicionesPagoSection from '@/components/sections/CondicionesPagoSection';
-// import PropuestaEconomicaSection from '@/components/sections/PropuestaEconomicaSection'; // Removed
-// import PropuestaDinamicaSection from '@/components/sections/PropuestaDinamicaSection'; // Removed
+import PropuestaEconomicaSection from '@/components/sections/PropuestaEconomicaSection';
 import CotizadorPage from '@/components/CotizadorPage';
 import CotizadorSMQ from '@/components/CotizadorSMQ';
 import CalculadoraProduccion from '@/components/CalculadoraProduccion';
 import ExclusionesSection from '@/components/sections/ExclusionesSection';
 import CapacidadesSection from '@/components/sections/CapacidadesSection';
 import SCR700Page from '@/components/sections/SCR700Page';
-import ClientesSection from '@/components/sections/ClientesSection'; // Import the new component
+import ClientesSection from '@/components/sections/ClientesSection';
+import VentajasSection from '@/components/sections/VentajasSection'; 
 
-// Mapa de componentes por id de sección
 const componentMap = {
+  ventajas: VentajasSection, 
   portada: PortadaSection,
   descripcion: DescripcionSection,
   generales: GeneralesSection,
   ficha: FichaTecnicaSection,
   ficha_dinamica: FichaDinamicaSection,
-  // propuesta: PropuestaEconomicaSection, // Removed
-  // propuesta_dinamica: PropuestaDinamicaSection, // Removed
+  propuesta: PropuestaEconomicaSection,
   cronograma: CronogramaSection,
   servicios: ServiciosSection,
   condiciones: CondicionesPagoSection,
@@ -61,83 +60,51 @@ const componentMap = {
   capacidades: CapacidadesSection,
   scr700_page: SCR700Page,
   clientes: ClientesSection,
-  admin: GenericSection, // Placeholder, puede ser un componente admin específico
-  servicios_adicionales: GenericSection, // Placeholder
+  admin: GenericSection, 
+  servicios_adicionales: GenericSection, 
 };
 
-// Configuración base de secciones (orden y visibilidad)
 const defaultSections = [
-  { id: 'portada', label: 'Home', icon: 'Home', isVisible: true, isLocked: true, component: 'portada' },
   { id: 'descripcion', label: 'Descripción', icon: 'FileText', isVisible: true, component: 'descripcion' },
-  { id: 'capacidades', label: 'Capacidades', icon: 'Rocket', isVisible: false, component: 'capacidades' },
-  { id: 'generales', label: 'Generales', icon: 'ClipboardList', isVisible: true, component: 'generales' },
-  { id: 'proceso', label: 'Flujo del proceso', icon: 'TrendingUp', isVisible: true, component: 'proceso' },
-  { id: 'ficha', label: 'Fichas técnicas', icon: 'ListChecks', isVisible: true, component: 'ficha' },
-  { id: 'ficha_dinamica', label: 'Ficha Dinámica', icon: 'ListChecks', isVisible: true, component: 'ficha_dinamica' },
-  // { id: 'propuesta', label: 'Propuesta económica', icon: 'DollarSign', isVisible: true, component: 'propuesta' }, // Removed
-  // { id: 'propuesta_dinamica', label: 'Propuesta Dinámica', icon: 'DollarSign', isVisible: true, component: 'propuesta_dinamica' }, // Removed
+  { id: 'ficha', label: 'Ficha Técnica', icon: 'ListChecks', isVisible: true, component: 'ficha' },
   { id: 'cronograma', label: 'Cronograma', icon: 'Calendar', isVisible: true, component: 'cronograma' },
-  { id: 'servicios', label: 'Servicios incluidos', icon: 'Package', isVisible: true, component: 'servicios' },
-  { id: 'exclusiones', label: 'Exclusiones', icon: 'XCircle', isVisible: true, component: 'exclusiones' },
-  { id: 'condiciones', label: 'Condiciones', icon: 'FileCheck', isVisible: true, component: 'condiciones', adminOnly: true },
-  { id: 'pdf', label: 'Cotización PDF', icon: 'FileDown', isVisible: true, component: 'pdf' },
+  { id: 'servicios', label: 'Servicios Incluidos', icon: 'Package', isVisible: true, component: 'servicios' },
+  { id: 'layout', label: 'Lay Out', icon: 'LayoutGrid', isVisible: true, component: 'layout' },
   { id: 'video', label: 'Video', icon: 'Video', isVisible: true, component: 'video' },
-  { id: 'layout', label: 'Layout', icon: 'LayoutGrid', isVisible: true, component: 'layout' },
-  { id: 'scr700_page', label: 'SCR700', icon: 'BrainCircuit', isVisible: true, component: 'scr700_page' },
-  { id: 'cotizador_page', label: 'Cotizador', icon: 'Calculator', isVisible: false, isLocked: true, component: 'cotizador_page' },
-  { id: 'cotizador_smq', label: 'Cotizador SMQ', icon: 'ClipboardSignature', isVisible: true, isLocked: false, component: 'cotizador_smq' },
+  { id: 'proceso', label: 'Proceso', icon: 'TrendingUp', isVisible: true, component: 'proceso' },
   { id: 'calculadora_prod', label: 'Calculadora', icon: 'Calculator', isVisible: true, isLocked: false, component: 'calculadora_prod' },
-  { id: 'ia', label: 'Asistente IA', icon: 'BrainCircuit', isVisible: true, isLocked: true, component: 'ia' },
-  { id: 'clientes', label: 'Clientes', icon: 'Users', isVisible: true, isLocked: false, component: 'clientes' },
-  { id: 'servicios_adicionales', label: 'Servicios Adicionales', icon: 'Briefcase', isVisible: true, component: 'servicios_adicionales', adminOnly: true },
-  { id: 'admin', label: 'Admin', icon: 'Sheet', isVisible: true, component: 'admin', adminOnly: true },
+  { id: 'pdf', label: 'Cotizaciones PDF', icon: 'FileDown', isVisible: true, component: 'pdf' },
+  { id: 'analiticas', label: 'Analíticas', icon: 'BarChart', isVisible: true, component: 'admin', adminOnly: true },
+  { id: 'ajustes', label: 'Ajustes', icon: 'Settings', isVisible: true, component: 'admin', adminOnly: true },
+  { id: 'propuesta', label: 'Propuesta Económica', icon: 'DollarSign', isVisible: true, component: 'propuesta' },
+  
+  // Hidden/Auxiliary
+  { id: 'ventajas', label: 'VENTAJAS', icon: 'Star', isVisible: false, isLocked: true, component: 'ventajas' },
+  { id: 'portada', label: 'Home', icon: 'Home', isVisible: false, isLocked: true, component: 'portada' },
+  { id: 'generales', label: 'Generales', icon: 'ClipboardList', isVisible: false, component: 'generales' },
+  { id: 'exclusiones', label: 'Exclusiones', icon: 'XCircle', isVisible: false, component: 'exclusiones' },
+  { id: 'ia', label: 'Asistente IA', icon: 'BrainCircuit', isVisible: false, isLocked: true, component: 'ia' },
 ];
 
-// AHORA: las secciones visibles para el cliente se calculan AUTOMÁTICAMENTE
-// a partir de defaultSections (excluyendo las adminOnly)
-const clientVisibleSections = new Set(
-  defaultSections
-    .filter(s => !s.adminOnly)
-    .map(s => s.id)
-);
+const clientVisibleSections = new Set(defaultSections.filter(s => !s.adminOnly).map(s => s.id));
 
-// Variante de secciones para temas SCR700 (activa "capacidades")
-const scr700Sections = defaultSections.map(s =>
-  s.id === 'capacidades' ? { ...s, isVisible: true } : s
-);
-
-// Fusiona configuración guardada con defaults, respetando orden
 const mergeWithDefaults = (config, themeKey) => {
-  const baseSections = (themeKey || '').startsWith('SCR700') ? scr700Sections : defaultSections;
-
-  if (!config || !Array.isArray(config)) {
-    return baseSections;
-  }
-
-  const defaultConfigMap = new Map(baseSections.map(s => [s.id, s]));
-
-  let mergedConfig = config.map(s => {
-    const defaultConfig = defaultConfigMap.get(s.id) || {};
-    return { ...defaultConfig, ...s };
-  });
-
-  const existingIds = new Set(mergedConfig.map(s => s.id));
-  baseSections.forEach(ds => {
-    if (!existingIds.has(ds.id)) {
-      mergedConfig.push(ds);
+  if (!config || !Array.isArray(config)) return defaultSections;
+  const defaultConfigMap = new Map(defaultSections.map(s => [s.id, s]));
+  let mergedConfig = config
+    .filter(s => s.id !== 'propuesta_dinamica') // Explicitly filter out prop_dinamica from DB configs
+    .map(s => {
+    if (!defaultConfigMap.has(s.id)) {
+       const baseComponentId = s.component || s.id.split('_copy')[0];
+       const baseConfig = defaultConfigMap.get(baseComponentId) || {};
+       return { ...baseConfig, ...s, component: baseComponentId }; 
     }
+    return { ...defaultConfigMap.get(s.id), ...s };
   });
-
-  const orderedIds = baseSections.map(s => s.id);
-  mergedConfig.sort((a, b) => {
-    const indexA = orderedIds.indexOf(a.id);
-    const indexB = orderedIds.indexOf(b.id);
-    if (indexA === -1 && indexB === -1) return 0;
-    if (indexA === -1) return 1;
-    if (indexB === -1) return -1;
-    return indexA - indexB;
+  const existingIds = new Set(mergedConfig.map(s => s.id));
+  defaultSections.forEach(ds => {
+    if (!existingIds.has(ds.id)) mergedConfig.push(ds);
   });
-
   return mergedConfig;
 };
 
@@ -147,7 +114,7 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
   const [themes, setThemes] = useState(isAdminView ? allThemes : { [initialQuotationData.theme_key]: initialQuotationData });
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showCloneModal, setShowCloneModal] = useState(false);
-  const [activeSection, setActiveSection] = useState('portada');
+  const [activeSection, setActiveSection] = useState('descripcion'); 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showCommandDialog, setShowCommandDialog] = useState(false);
   const [aiQuery, setAiQuery] = useState('');
@@ -177,11 +144,9 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
   };
 
   const handleHomeClick = useCallback(() => {
-    setActiveSection('portada');
+    setActiveSection('descripcion'); 
     const homeEl = document.getElementById('main-content-scroll-area');
-    if (homeEl) {
-      homeEl.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    if (homeEl) homeEl.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const resetIdleTimer = useCallback(() => {
@@ -207,7 +172,6 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
 
     const events = ['mousemove', 'keydown', 'scroll', 'touchstart'];
     events.forEach(event => window.addEventListener(event, resetIdleTimer));
-
     return () => {
       events.forEach(event => window.removeEventListener(event, resetIdleTimer));
       clearTimeout(idleTimerRef.current);
@@ -217,190 +181,83 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
 
   useEffect(() => {
     if (quotationData) {
-      if (isAdminView) {
-        localStorage.setItem('activeTheme', activeTheme);
-      }
-      const themeClass = (activeTheme || '').startsWith('SMQ')
-        ? 'theme-smq'
-        : (activeTheme || '').startsWith('SCR700')
-          ? 'theme-scr700'
-          : 'theme-nova';
-      document.body.className = themeClass;
+      if (isAdminView) localStorage.setItem('activeTheme', activeTheme);
+      document.body.className = 'theme-nova';
     }
   }, [activeTheme, quotationData, isAdminView]);
 
   const handleSectionSelect = useCallback((sectionId) => {
     setActiveSection(sectionId);
-
-    const specialPages = ['ia', 'cotizador_page', 'cotizador_smq', 'calculadora_prod', 'scr700_page', 'clientes', 'admin', 'servicios_adicionales'];
-    if (specialPages.includes(sectionId)) {
+    const el = document.getElementById(sectionId);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    else {
       const mainContent = document.getElementById('main-content-scroll-area');
-      if (mainContent) {
-        mainContent.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    } else {
-      const el = document.getElementById(sectionId);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      if (mainContent) mainContent.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, []);
 
   const setSectionsConfig = async (newConfig) => {
-    const sortedConfig = mergeWithDefaults(newConfig, activeTheme);
     setThemes(prevThemes => ({
       ...prevThemes,
-      [activeTheme]: {
-        ...prevThemes[activeTheme],
-        sections_config: sortedConfig,
-      },
+      [activeTheme]: { ...prevThemes[activeTheme], sections_config: newConfig },
     }));
-    await supabase
-      .from('quotations')
-      .update({ sections_config: sortedConfig })
-      .eq('theme_key', activeTheme);
+    await supabase.from('quotations').update({ sections_config: newConfig }).eq('theme_key', activeTheme);
   };
 
-  const handleVideoUrlUpdate = async (newUrl) => {
-    setThemes(prevThemes => ({
-      ...prevThemes,
-      [activeTheme]: {
-        ...prevThemes[activeTheme],
-        video_url: newUrl,
-      },
-    }));
-    await supabase
-      .from('quotations')
-      .update({ video_url: newUrl })
-      .eq('theme_key', activeTheme);
-  };
+  if (!quotationData) return null;
 
-  if (!quotationData) {
-    return null;
-  }
+  let menuItems = (quotationData.sections_config || defaultSections).map(section => {
+    const cleanCompKey = (section.component || section.id).split('_copy')[0]; 
+    return {
+      ...section,
+      Component: componentMap[cleanCompKey] || componentMap[section.id] || GenericSection,
+      label: section.label || t(`sections.${section.id}`) 
+    };
+  });
 
-  let menuItems = (quotationData.sections_config || defaultSections).map(section => ({
-    ...section,
-    Component: componentMap[section.component || section.id],
-    label: t(`sections.${section.id}`) || section.label,
-  }));
+  // Extra safety filter to ensure removed components don't crash
+  menuItems = menuItems.filter(section => section.id !== 'propuesta_dinamica');
 
-  // Vista cliente: filtrar por visibilidad, lista de permitidos y no admin
   if (!isAdminView) {
-    menuItems = menuItems.filter(item => {
-      return item.isVisible && clientVisibleSections.has(item.id) && !item.adminOnly;
-    });
-  }
-
-  // Vista admin sin autenticarse: ocultar secciones admin-only
-  if (isAdminView && !isAdminAuthenticated) {
+    // Filter hidden items and admin items for normal view
+    menuItems = menuItems.filter(item => item.isVisible && clientVisibleSections.has(item.id.split('_copy')[0]) && !item.adminOnly);
+  } else if (!isAdminAuthenticated) {
+    // Filter admin items for non-authenticated admin view
     menuItems = menuItems.filter(item => !item.adminOnly);
   }
 
-  const mainContentSections = menuItems.filter(
-    s =>
-      ![
-        'cotizador_page',
-        'cotizador_smq',
-        'calculadora_prod',
-        'ia',
-        'scr700_page',
-        'clientes',
-        'admin',
-        'servicios_adicionales',
-      ].includes(s.id)
-  );
-
-  let sidebarMenuItems = [...menuItems];
-  if (!isAdminView) {
-    sidebarMenuItems = menuItems.filter(item => (!item.isLocked || item.id === 'portada'));
-  }
-
-  const isSpecialPageActive = [
-    'cotizador_page',
-    'cotizador_smq',
-    'calculadora_prod',
-    'ia',
-    'scr700_page',
-    'clientes',
-    'admin',
-    'servicios_adicionales',
-  ].includes(activeSection);
-
   const renderActiveComponent = () => {
-    const ActiveComponent = componentMap[activeSection];
-    if (!ActiveComponent) return null;
-
-    const componentWrapper = (Component, props) => (
-      <div className="px-4">
-        <Component {...props} />
-      </div>
-    );
-
-    if (isSpecialPageActive) {
-      const specialProps = {
-        cotizador_page: { quotationData, activeTheme, setThemes },
-        cotizador_smq: {},
-        calculadora_prod: { quotationData, isEditorMode, activeTheme },
-        ia: { initialQuery: aiQuery, setInitialQuery: setAiQuery },
-        scr700_page: {},
-        clientes: {},
-        admin: { sectionId: 'admin' },
-        servicios_adicionales: { sectionId: 'servicios_adicionales' },
-        condiciones: { sectionId: 'condiciones' },
-      };
-      if (
-        !isAdminAuthenticated &&
-        (specialProps[activeSection]?.adminOnly ||
-          ['cotizador_page', 'cotizador_smq', 'clientes', 'admin', 'servicios_adicionales', 'condiciones'].includes(
-            activeSection
-          ))
-      )
-        return null;
-      return componentWrapper(ActiveComponent, specialProps[activeSection]);
-    } else {
-      return (
+    const activeSectionObj = menuItems.find(s => s.id === activeSection);
+    const ActiveComponent = activeSectionObj?.Component || componentMap[activeSection] || GenericSection;
+    
+    return (
         <MainContent
           activeSection={activeSection}
           setActiveSection={setActiveSection}
           quotationData={quotationData}
           aiQuery={aiQuery}
           setAiQuery={setAiQuery}
-          sections={mainContentSections}
-          allSectionsData={menuItems}
+          sections={menuItems}
+          allSectionsData={quotationData.sections_config} // Pass full config including hidden items
           isEditorMode={isEditorMode && isAdminView}
           setIsEditorMode={setIsEditorMode}
           activeTheme={activeTheme}
           onSectionContentUpdate={setSectionsConfig}
-          onVideoUrlUpdate={handleVideoUrlUpdate}
         />
-      );
-    }
+    );
   };
 
   return (
     <>
       <Helmet>
-        <title>
-          {quotationData.company} - {quotationData.project}
-        </title>
-        <meta
-          name="description"
-          content={`Cotización para el proyecto ${quotationData.project} de ${quotationData.company}.`}
-        />
-        {quotationData.favicon && <link rel="icon" href={quotationData.favicon} />}
+        <title>{quotationData.company} - {quotationData.project}</title>
       </Helmet>
-
       {isAdminView && showPasswordPrompt && (
         <PasswordPrompt
-          onCorrectPassword={() => {
-            setIsAdminAuthenticated(true);
-            setShowPasswordPrompt(false);
-          }}
+          onCorrectPassword={() => { setIsAdminAuthenticated(true); setShowPasswordPrompt(false); }}
           onCancel={() => setShowPasswordPrompt(false)}
         />
       )}
-
       <div className="flex h-screen overflow-hidden bg-black">
         <div className="hidden lg:flex lg:flex-shrink-0">
           <Sidebar
@@ -412,7 +269,7 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
             onAdminClick={() => isAdminView && setShowAdminModal(true)}
             isEditorMode={isEditorMode && isAdminView}
             setIsEditorMode={setIsEditorMode}
-            sections={sidebarMenuItems}
+            sections={menuItems}
             setSections={setSectionsConfig}
             isAdminAuthenticated={isAdminAuthenticated && isAdminView}
             onAdminLogin={() => isAdminView && setShowPasswordPrompt(true)}
@@ -420,27 +277,21 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
             isAdminView={isAdminView}
           />
         </div>
-
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header
             quotationData={quotationData}
             onLogoClick={handleHomeClick}
             onSearchClick={() => isAdminView && setShowCommandDialog(true)}
-            isBannerVisible={isBannerVisible && !isSpecialPageActive}
+            isBannerVisible={isBannerVisible}
             isEditorMode={isEditorMode}
             isAdminView={isAdminView}
           />
-
-          <div
-            id="main-content-scroll-area"
-            className="flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain pb-20 lg:pb-0"
-          >
+          <div id="main-content-scroll-area" className="flex-1 overflow-y-auto overflow-x-hidden pb-20 lg:pb-0">
             {renderActiveComponent()}
           </div>
         </div>
-
         <BottomNavBar
-          sections={sidebarMenuItems}
+          sections={menuItems}
           activeSection={activeSection}
           onSectionSelect={handleSectionSelect}
           onHomeClick={handleHomeClick}
@@ -453,37 +304,6 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
           activeTheme={activeTheme}
           isAdminView={isAdminView}
         />
-
-        {isAdminView && (
-          <>
-            <AdminModal
-              isOpen={showAdminModal}
-              onClose={() => setShowAdminModal(false)}
-              themes={themes}
-              setThemes={setThemes}
-              activeTheme={activeTheme}
-              setActiveTheme={setActiveTheme}
-              onCloneClick={() => setShowCloneModal(true)}
-            />
-
-            <CloneModal
-              isOpen={showCloneModal}
-              onClose={() => setShowCloneModal(false)}
-              themes={themes}
-              setThemes={setThemes}
-              setActiveTheme={setActiveTheme}
-            />
-
-            <CommandDialogDemo
-              open={showCommandDialog}
-              onOpenChange={setShowCommandDialog}
-              setActiveSection={handleSectionSelect}
-              setAiQuery={setAiQuery}
-              setIsEditorMode={setIsEditorMode}
-            />
-          </>
-        )}
-
         <Toaster />
       </div>
     </>

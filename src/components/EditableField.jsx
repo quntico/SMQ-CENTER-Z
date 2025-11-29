@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Edit } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const EditableField = ({ 
@@ -10,6 +9,7 @@ const EditableField = ({
   inputClassName = '',
   placeholder = 'Editar...',
   tag: Tag = 'span',
+  type = 'text',
   ...props
 }) => {
   const [internalValue, setInternalValue] = useState(value);
@@ -20,7 +20,7 @@ const EditableField = ({
   }, [value]);
   
   const handleSave = async () => {
-    if (internalValue !== value) {
+    if (internalValue != value) {
       await onSave(internalValue);
     }
   };
@@ -49,7 +49,7 @@ const EditableField = ({
           }
         }}
         className={cn(
-          'w-full bg-gray-900/50 border border-primary/30 rounded-md p-1 px-2 text-white focus:outline-none focus:ring-2 focus:ring-primary/80 focus:border-primary/80 transition-all',
+          'w-full bg-gray-900/50 border border-blue-500/30 rounded-md p-1 px-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/80 focus:border-blue-500/80 transition-all',
           'placeholder:text-gray-500',
           className,
           inputClassName

@@ -1,61 +1,86 @@
-import React, { useState } from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
+import React, { useState, useMemo } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { iconMap, iconList } from '@/lib/iconMap';
 import { Search } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-const IconPicker = ({ value, onChange, children }) => {
-  const [search, setSearch] = useState('');
+const IconPicker = ({ value, onChange, trigger, children, isEditorMode }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
 
-  const filteredIcons = iconList.filter(iconName =>
-    iconName.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredIcons = useMemo(() => {
+    if (!search) return iconList.slice(0, 100);
+    return iconList.filter(name => 
+      name.toLowerCase().includes(search.toLowerCase())
+    ).slice(0, 100);
+  }, [search]);
+
+  if (!isEditorMode) {
+    return trigger || children;
+  }
 
   const CurrentIcon = iconMap[value] || iconMap['FileText'];
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverContent className="w-80 bg-gray-900 border-gray-700 text-white">
-        <div className="grid gap-4">
-          <div className="space-y-2">
-            <h4 className="font-medium leading-none">Seleccionar Icono</h4>
-            <p className="text-sm text-gray-400">
-              Busca y elige un icono para la característica.
-            </p>
-          </div>
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Buscar icono..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8"
-            />
-          </div>
-          <div className="grid grid-cols-6 gap-2 max-h-60 overflow-y-auto pr-2">
-            {filteredIcons.map((iconName) => {
-              const IconComponent = iconMap[iconName];
-              return (
-                <Button
-                  key={iconName}
-                  variant="outline"
-                  size="icon"
-                  className={`h-12 w-12 ${value === iconName ? 'bg-primary text-white' : ''}`}
-                  onClick={() => {
-                    onChange(iconName);
-                    setIsOpen(false);
-                  }}
-                >
-                  <IconComponent className="h-6 w-6" />
-                </Button>
-              );
-            })}
-          </div>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild onClick={(e) => e.stopPropagation()}>
+        {trigger || children || (
+          <Button variant="outline" size="icon" className="h-8 w-8 border-dashed border-blue-500/50 hover:border-blue-500">
+             {CurrentIcon && <CurrentIcon className="h-4 w-4" />}
+          </Button>
+        )}
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col bg-gray-950 border-gray-800 text-white">
+        <DialogHeader>
+          <DialogTitle className="text-blue-500">Seleccionar Icono</DialogTitle>
+        </DialogHeader>
+        
+        <div className="relative my-2">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Buscar icono (ej: home, user, star)..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 bg-gray-900 border-gray-700 focus:border-blue-500 text-white"
+          />
         </div>
-      </PopoverContent>
-    </Popover>
+
+        <div className="flex-1 overflow-y-auto min-h-[300px] p-2">
+          {filteredIcons.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No se encontraron iconos.
+            </div>
+          ) : (
+            <div className="grid grid-cols-6 sm:grid-cols-8 gap-2">
+              {filteredIcons.map((iconName) => {
+                const IconComponent = iconMap[iconName];
+                const isSelected = value === iconName;
+                
+                return (
+                  <Button
+                    key={iconName}
+                    variant="ghost"
+                    className={cn(
+                      "h-10 w-10 p-2 hover:bg-gray-800 hover:text-blue-500 transition-all",
+                      isSelected && "bg-blue-500/20 text-blue-500 border border-blue-500/50"
+                    )}
+                    onClick={() => {
+                      onChange(iconName);
+                      setIsOpen(false);
+                    }}
+                    title={iconName}
+                  >
+                    <IconComponent className="h-6 w-6" />
+                  </Button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

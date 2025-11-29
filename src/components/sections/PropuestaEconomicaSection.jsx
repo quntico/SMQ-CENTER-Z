@@ -1,596 +1,904 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useToast } from '@/components/ui/use-toast';
-import SectionHeader from '@/components/SectionHeader';
-import EditableField from '@/components/EditableField';
-import IconPicker from '@/components/IconPicker';
-import { iconMap } from '@/lib/iconMap';
-import {
-  Plus,
-  Trash2,
-  Copy,
-  ArrowUp,
-  ArrowDown,
-  ChevronUp,
+import React, { useState, useEffect } from 'react';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { 
+  Save, 
+  FileText, 
+  Download, 
+  Upload, 
+  Plus, 
+  Trash2, 
+  Edit,
   ChevronDown,
-  DollarSign,
-  Eye as EyeIcon,
+  ChevronRight,
+  Settings,
+  Box,
+  FolderOpen,
+  LayoutGrid,
+  Lock,
+  Unlock,
+  Zap,
+  DollarSign
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import PowerButtons from '@/components/PowerButtons';
+import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/components/ui/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { ScrollArea } from '@/components/ui/scroll-area';
+import IconPicker from '@/components/IconPicker';
+import { iconMap } from '@/lib/iconMap';
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import PDFPreviewModal from '@/components/PDFPreviewModal';
 
+// --- Helper Functions ---
 const formatCurrency = (value, currency = 'USD') => {
-  if (typeof value !== 'number') {
-    value = parseFloat(String(value).replace(/[^0-9.]/g, '')) || 0;
-  }
+  const num = parseFloat(value) || 0;
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
+    minimumFractionDigits: 2
+  }).format(num);
 };
 
-const defaultContent = {
-  subtitle:
-    'Aquí puedes ver el desglose de la inversión. Marca o desmarca los componentes para ajustar el costo total.',
-  taxRate: 16,
-  currency: 'USD',
-  sellerName: 'Nombre del Vendedor',
-  sellerDepartment: 'DIRECCIÓN DE VENTAS',
+const StrictModeDroppable = ({ children, ...props }) => {
+  const [enabled, setEnabled] = useState(false);
+  useEffect(() => {
+    const animation = requestAnimationFrame(() => setEnabled(true));
+    return () => {
+      cancelAnimationFrame(animation);
+      setEnabled(false);
+    };
+  }, []);
+  if (!enabled) return null;
+  return <Droppable {...props}>{children}</Droppable>;
+};
+
+const DEFAULT_CONTENT = {
+  pageTitle: 'PROPUESTA',
+  pageTitleHighlight: 'ECONÓMICA',
+  pageDescription: 'Aquí puedes ver el desglose de la inversión. Marca o desmarca los componentes para ajustar el costo total.',
   groups: [
     {
-      id: 'group1',
+      id: 'group-general',
       title: 'General',
-      isOpen: true,
       items: [
         {
-          id: 'item1',
-          icon: 'Package',
+          id: 'item-1',
           title: 'LÍNEA DE BARRAS DE CEREAL',
           subtitle: 'LCB 300',
-          price: 180760,
+          price: 120760,
           kw: 45,
-          isActive: true,
+          icon: 'Box',
+          isActive: true
         },
-      ],
-    },
+        {
+          id: 'item-2',
+          title: 'EMPAQUETADO PCT80',
+          subtitle: 'EMPAQUE PRIMARIO',
+          price: 64900,
+          kw: 12,
+          icon: 'Package',
+          isActive: true
+        }
+      ]
+    }
   ],
+  currency: 'USD',
+  taxRate: 16,
+  exchangeRate: 18.50 // Default exchange rate
 };
 
-const PropuestaEconomicaSection = ({
-  sectionData,
-  isEditorMode,
+const PropuestaEconomicaSection = ({ 
+  sectionData = {}, 
+  isEditorMode = false, 
   onContentChange,
-  quotationData,
-  sections,
+  quotationData
 }) => {
   const { toast } = useToast();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState({});
+  const [activeSelection, setActiveSelection] = useState({ type: 'general', id: 'general' });
+  const [localAdminMode, setLocalAdminMode] = useState(false);
+
+  const isModeAdmin = isEditorMode || localAdminMode;
   
-  const content = useMemo(() => {
-    const merged = { ...defaultContent, ...(sectionData.content || {}) };
-    if (!merged.groups || !Array.isArray(merged.groups) || merged.groups.length === 0) {
-      merged.groups = defaultContent.groups;
-    }
-    return merged;
-  }, [sectionData.content]);
+  // Merge defaults carefully to ensure exchangeRate exists if not present in old data
+  const content = { 
+    ...DEFAULT_CONTENT, 
+    ...(sectionData.content || {}),
+    exchangeRate: sectionData.content?.exchangeRate ?? DEFAULT_CONTENT.exchangeRate 
+  };
 
-  const [showPreview, setShowPreview] = useState(false);
-  const [pdfTemplate, setPdfTemplate] = useState({
-    logoUrl: '',
-    logoPosition: { x: 148, y: 20 },
-    logoSize: 45,
-  });
-
-  useEffect(() => {
-    const initialTemplate = {
-      logoUrl: quotationData.logo || '',
-      logoPosition: { x: 148, y: 20 },
-      logoSize: 45,
-      ...(quotationData.pdf_template || {}),
-    };
-    if (quotationData.pdf_template?.logoUrl) {
-      initialTemplate.logoUrl = quotationData.pdf_template.logoUrl;
-    }
-    setPdfTemplate(initialTemplate);
-  }, [quotationData.logo, quotationData.pdf_template]);
+  const activeItems = content.groups.flatMap(g => g.items).filter(i => i.isActive);
+  const subtotal = activeItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+  
+  // 1) Sumatoria de KW de items activos
+  const totalKW = activeItems.reduce((sum, item) => sum + (parseFloat(item.kw) || 0), 0);
+  
+  const totalTax = subtotal * (content.taxRate / 100);
+  const totalUSD = subtotal + totalTax;
+  
+  // 4) Calcular total en pesos
+  const totalMXN = totalUSD * (parseFloat(content.exchangeRate) || 1);
 
   const updateContent = (newContent) => {
-    onContentChange({ ...content, ...newContent });
-  };
-
-  const handleContentFieldChange = (field, value) => {
-    updateContent({ [field]: value });
-  };
-
-  const loadImage = (src) => {
-    return new Promise((resolve, reject) => {
-      if (!src) {
-        resolve(null);
-        return;
-      }
-      const img = new Image();
-      img.crossOrigin = 'Anonymous';
-      img.src = src;
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error('No se pudo cargar la imagen del logo para el PDF.'));
-    });
-  };
-
-  const handleGeneratePDF = async () => {
-    try {
-      const doc = new jsPDF();
-      await generatePdfContent(doc);
-      doc.save(`Propuesta_Economica_${quotationData.project}.pdf`);
-      toast({
-        title: 'PDF Generado',
-        description: 'La descarga de tu propuesta ha comenzado.',
-      });
-    } catch (error) {
-      toast({
-        title: 'Error al generar PDF',
-        description: error.message,
-        variant: 'destructive',
-      });
+    if (onContentChange) {
+      onContentChange(newContent);
     }
   };
 
-  const generatePdfContent = async (doc) => {
-    const primaryColor = '#007BFF';
-    const blackColor = '#000000';
-    const whiteColor = '#ffffff';
-    const grayColor = '#444444';
-    const lightGrayColor = '#F5F5F5';
-
-    const logoImage = await loadImage(pdfTemplate.logoUrl);
-    if (logoImage) {
-      const { logoSize, logoPosition } = pdfTemplate;
-      const imgWidth = logoSize;
-      const imgHeight = (logoImage.height * imgWidth) / logoImage.width;
-      doc.addImage(logoImage, 'PNG', logoPosition.x, logoPosition.y, imgWidth, imgHeight, undefined, 'FAST');
-    }
-
-    doc.setFontSize(9);
-    doc.setTextColor(grayColor);
-    doc.setFont('helvetica', 'bold');
-    doc.text('CLIENTE:', 14, 15);
-    doc.text('EMPRESA:', 14, 20);
-    doc.text('PROYECTO:', 14, 25);
-    doc.text('FECHA:', 14, 30);
-
-    doc.setFont('helvetica', 'normal');
-    doc.text(quotationData.client || 'N/A', 35, 15);
-    doc.text(quotationData.company || 'N/A', 35, 20);
-    doc.text(quotationData.project || 'N/A', 35, 25);
-    doc.text(format(new Date(), 'dd MMMM, yyyy', { locale: es }), 35, 30);
-
-    doc.setFillColor(primaryColor);
-    doc.rect(14, 35, 182, 12, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(22);
-    doc.setTextColor(whiteColor);
-    doc.text('PROPUESTA ECONÓMICA', 18, 44);
-
-    const tableStartY = 50;
-    doc.setFillColor(blackColor);
-    doc.rect(14, tableStartY, 126, 7, 'F');
-    doc.setFillColor(primaryColor);
-    doc.rect(140, tableStartY, 56, 7, 'F');
-    doc.setFontSize(11);
-    doc.setTextColor(whiteColor);
-    doc.text('DESCRIPCIÓN', 18, tableStartY + 5);
-    doc.text('IMPORTE', 168, tableStartY + 5, { align: 'center' });
-
-    const tableBody = [];
-    let total = 0;
-
-    content.groups.forEach((group) => {
-      const activeItems = group.items.filter((item) => item.isActive);
-      if (activeItems.length > 0) {
-        tableBody.push([
-          { content: `\n${group.title.toUpperCase()}`, styles: { fontStyle: 'bold', fontSize: 10, textColor: blackColor } },
-          '',
-        ]);
-        activeItems.forEach((item) => {
-          tableBody.push([
-            { content: `•  ${item.title}: ${item.subtitle}`, styles: { cellPadding: { left: 5 }, textColor: grayColor } },
-            { content: formatCurrency(item.price, content.currency), styles: { halign: 'right', textColor: grayColor } },
-          ]);
-          total += item.price;
-        });
-      }
-    });
-
-    doc.autoTable({
-      startY: tableStartY + 7,
-      body: tableBody,
-      theme: 'plain',
-      styles: { fontSize: 9, cellPadding: { top: 1, right: 2, bottom: 1, left: 2 } },
-      columnStyles: { 0: { cellWidth: 126 }, 1: { cellWidth: 56, halign: 'right' } },
-      didParseCell: (data) => {
-        if (data.cell.section === 'body') {
-          data.cell.styles.fillColor = data.row.index % 2 === 0 ? whiteColor : lightGrayColor;
-        }
-      },
-    });
-
-    let finalY = doc.previousAutoTable.finalY + 5;
-    if (finalY < 60) finalY = 60;
-
-    doc.setFillColor(primaryColor);
-    doc.rect(140, finalY, 56, 7, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(whiteColor);
-    doc.text('TOTAL', 144, finalY + 5);
-    doc.setFont('helvetica', 'normal');
-    doc.text(formatCurrency(total, content.currency), 194, finalY + 5, { align: 'right' });
-
-    finalY += 12;
-    doc.setFontSize(10);
-    doc.setTextColor(blackColor);
-    doc.text(`Más ${content.taxRate}% de I.V.A.`, 194, finalY, { align: 'right' });
-
-    finalY += 15;
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(primaryColor);
-    doc.text('TÉRMINOS DE VENTA', 14, finalY);
-    finalY += 2;
-
-    const termBody = [];
-    const creditCardIcon = '💳';
-    const clockIcon = '🕒';
-
-    const condicionesSection = sections.find((s) => s.id === 'condiciones');
-    if (condicionesSection && condicionesSection.content) {
-      const paymentTerms = condicionesSection.content.terms.map((t) => `${t.percentage}% ${t.title}`).join(' | ');
-      termBody.push([
-        { content: creditCardIcon, styles: { halign: 'center' } },
-        { content: 'Condiciones de Pago', styles: { fontStyle: 'bold' } },
-        paymentTerms,
-      ]);
-    }
-
-    const { phase1_duration = 0, phase2_duration = 0, phase3_duration = 0 } = quotationData;
-    const totalDeliveryDays = phase1_duration + phase2_duration + phase3_duration;
-    termBody.push([
-      { content: clockIcon, styles: { halign: 'center' } },
-      { content: 'Tiempo de Entrega', styles: { fontStyle: 'bold' } },
-      `${totalDeliveryDays} días + Transporte.`,
-    ]);
-
-    doc.autoTable({
-      startY: finalY,
-      body: termBody,
-      theme: 'grid',
-      styles: { fontSize: 9, valign: 'middle', fillColor: whiteColor, lineColor: [200, 200, 200] },
-      headStyles: { fillColor: primaryColor, textColor: whiteColor },
-      columnStyles: { 0: { cellWidth: 10, halign: 'center' }, 1: { cellWidth: 40 }, 2: { cellWidth: 'auto' } },
-    });
-    finalY = doc.previousAutoTable.finalY + 15;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(grayColor);
-    doc.text(content.sellerName || '', 194, finalY, { align: 'right' });
-    finalY += 4;
-    doc.text(content.sellerDepartment || '', 194, finalY, { align: 'right' });
-
-    doc.setFillColor(primaryColor);
-    doc.rect(0, doc.internal.pageSize.height - 10, doc.internal.pageSize.width, 10, 'F');
+  const toggleGroupExpand = (groupId) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupId]: !prev[groupId]
+    }));
   };
 
-  const handleFieldChange = (groupIndex, itemIndex, field, value) => {
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+    const { source, destination } = result;
     const newGroups = [...content.groups];
-    newGroups[groupIndex].items[itemIndex][field] = value;
-    updateContent({ groups: newGroups });
+
+    const sourceGroupIndex = newGroups.findIndex(g => g.id === source.droppableId);
+    const destGroupIndex = newGroups.findIndex(g => g.id === destination.droppableId);
+    if (sourceGroupIndex === -1 || destGroupIndex === -1) return;
+
+    const sourceGroup = newGroups[sourceGroupIndex];
+    const destGroup = newGroups[destGroupIndex];
+    const [movedItem] = sourceGroup.items.splice(source.index, 1);
+    destGroup.items.splice(destination.index, 0, movedItem);
+
+    updateContent({ ...content, groups: newGroups });
   };
 
-  const handlePriceChange = (groupIndex, itemIndex, value) => {
-    const numericValue = parseFloat(String(value).replace(/[^0-9.]/g, ''));
-    if (!isNaN(numericValue)) {
-      handleFieldChange(groupIndex, itemIndex, 'price', numericValue);
-    }
-  };
-
-  const handleKwChange = (groupIndex, itemIndex, value) => {
-    const numericValue = parseFloat(String(value).replace(/[^0-9.]/g, '')) || 0;
-    handleFieldChange(groupIndex, itemIndex, 'kw', numericValue);
-  };
-
-  const handleGroupFieldChange = (groupIndex, field, value) => {
-    const newGroups = [...content.groups];
-    newGroups[groupIndex][field] = value;
-    updateContent({ groups: newGroups });
-  };
-
-  const handleAddItem = (groupIndex) => {
-    const newGroups = [...content.groups];
-    newGroups[groupIndex].items.push({
-      id: `item_${Date.now()}`,
-      icon: 'FileText',
-      title: 'Nuevo Item',
-      subtitle: 'Descripción',
-      price: 0,
-      kw: 0,
-      isActive: true,
+  const handleItemChange = (groupId, itemId, field, value) => {
+    const newGroups = content.groups.map(group => {
+      if (group.id !== groupId) return group;
+      return {
+        ...group,
+        items: group.items.map(item => {
+          if (item.id !== itemId) return item;
+          return { ...item, [field]: value };
+        })
+      };
     });
-    updateContent({ groups: newGroups });
+    updateContent({ ...content, groups: newGroups });
+  };
+
+  const handleGroupTitleChange = (groupId, newTitle) => {
+    const newGroups = content.groups.map(g => g.id === groupId ? { ...g, title: newTitle } : g);
+    updateContent({ ...content, groups: newGroups });
   };
 
   const handleAddGroup = () => {
-    const newGroups = [...content.groups];
-    newGroups.push({
-      id: `group_${Date.now()}`,
-      title: 'Nuevo Grupo',
-      isOpen: true,
-      items: [],
+    const newGroupId = `group-${Date.now()}`;
+    const newGroups = [...content.groups, { 
+      id: newGroupId, 
+      title: 'NUEVO GRUPO', 
+      items: [] 
+    }];
+    updateContent({ ...content, groups: newGroups });
+    setExpandedGroups(prev => ({ ...prev, [newGroupId]: true }));
+    setActiveSelection({ type: 'group', id: newGroupId });
+  };
+
+  const handleDeleteGroup = (groupId) => {
+    const newGroups = content.groups.filter(g => g.id !== groupId);
+    updateContent({ ...content, groups: newGroups });
+    if (activeSelection.id === groupId) {
+      setActiveSelection({ type: 'general', id: 'general' });
+    }
+  };
+
+  const handleAddItem = (groupId) => {
+    const newItemId = `item-${Date.now()}`;
+    const newGroups = content.groups.map(group => {
+      if (group.id !== groupId) return group;
+      return {
+        ...group,
+        items: [
+          ...group.items,
+          {
+            id: newItemId,
+            title: 'NUEVO ITEM',
+            subtitle: 'Descripción técnica',
+            price: 0,
+            kw: 0,
+            icon: 'Box',
+            isActive: true
+          }
+        ]
+      };
     });
-    updateContent({ groups: newGroups });
+    updateContent({ ...content, groups: newGroups });
+    setExpandedGroups(prev => ({ ...prev, [groupId]: true }));
+    setActiveSelection({ type: 'item', id: newItemId, groupId });
   };
 
-  const handleDuplicateItem = (groupIndex, itemIndex) => {
-    const newGroups = [...content.groups];
-    const itemToDuplicate = newGroups[groupIndex].items[itemIndex];
-    const duplicatedItem = { ...itemToDuplicate, id: `item_${Date.now()}` };
-    newGroups[groupIndex].items.splice(itemIndex + 1, 0, duplicatedItem);
-    updateContent({ groups: newGroups });
+  const handleDeleteItem = (groupId, itemId) => {
+    const newGroups = content.groups.map(group => {
+      if (group.id !== groupId) return group;
+      return {
+        ...group,
+        items: group.items.filter(item => item.id !== itemId)
+      };
+    });
+    updateContent({ ...content, groups: newGroups });
+    if (activeSelection.id === itemId) {
+       setActiveSelection({ type: 'group', id: groupId });
+    }
   };
 
-  const handleRemoveItem = (groupIndex, itemIndex) => {
-    const newGroups = [...content.groups];
-    newGroups[groupIndex].items.splice(itemIndex, 1);
-    updateContent({ groups: newGroups });
-  };
-  
-  const handleRemoveGroup = (groupIndex) => {
-    const newGroups = [...content.groups];
-    newGroups.splice(groupIndex, 1);
-    updateContent({ groups: newGroups });
-  };
-
-  const handleMoveItem = (groupIndex, itemIndex, direction) => {
-    const newGroups = [...content.groups];
-    const items = newGroups[groupIndex].items;
-    const newIndex = itemIndex + direction;
-    if (newIndex < 0 || newIndex >= items.length) return;
-    const item = items.splice(itemIndex, 1)[0];
-    items.splice(newIndex, 0, item);
-    updateContent({ groups: newGroups });
+  const handleExport = () => {
+    const dataStr = JSON.stringify(content, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `propuesta_economica_${Date.now()}.json`;
+    link.click();
+    toast({ title: "Exportado", description: "Archivo JSON descargado." });
   };
 
-  const total = useMemo(() => {
-    return content.groups.reduce((acc, group) => {
-      return acc + group.items.reduce((itemAcc, item) => (item.isActive ? itemAcc + (item.price || 0) : itemAcc), 0);
-    }, 0);
-  }, [content.groups]);
+  const handleImport = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target.result);
+        updateContent({ ...content, ...parsed });
+        toast({ title: "Importado", description: "Datos cargados correctamente." });
+      } catch (err) {
+        toast({ variant: "destructive", title: "Error", description: "Archivo inválido" });
+      }
+    };
+    reader.readAsText(file);
+  };
 
-  const totalKw = useMemo(() => {
-    return content.groups.reduce((acc, group) => {
-      return acc + group.items.reduce((itemAcc, item) => (item.isActive ? itemAcc + (item.kw || 0) : itemAcc), 0);
-    }, 0);
-  }, [content.groups]);
+  // 6) & 7) PDF Export with new fields
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    
+    // Header Background
+    doc.setFillColor(0, 0, 0);
+    doc.rect(0, 0, 210, 40, 'F');
+    
+    // Title
+    doc.setTextColor(59, 130, 246); 
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    const titleFull = `${content.pageTitle || 'PROPUESTA'} ${content.pageTitleHighlight || 'ECONÓMICA'}`;
+    doc.text(titleFull, 105, 25, { align: 'center' });
 
-  const groupTotals = useMemo(() => {
-    return content.groups.map((group) =>
-      group.items.reduce((acc, item) => (item.isActive ? acc + (item.price || 0) : acc), 0)
-    );
-  }, [content.groups]);
+    let y = 50;
+    const margin = 14;
 
-  return (
-    <>
-      <PDFPreviewModal
-        isOpen={showPreview}
-        onClose={() => setShowPreview(false)}
-        quotationData={quotationData}
-        sections={sections}
-        economicContent={content}
-        pdfTemplate={pdfTemplate}
-        setPdfTemplate={setPdfTemplate}
-        activeTheme={quotationData.theme_key}
-      />
-      <div className="py-16 sm:py-24 bg-black text-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <SectionHeader
-            sectionData={sectionData}
-            isEditorMode={isEditorMode}
-            onContentChange={(newSectionContent) => onContentChange({ ...content, ...newSectionContent })}
-          />
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-center text-gray-400 max-w-xl mx-auto -mt-6 mb-12"
-          >
-            <EditableField
-              value={content.subtitle}
-              onSave={(val) => handleContentFieldChange('subtitle', val)}
-              isEditorMode={isEditorMode}
-            />
-          </motion.div>
+    // Client Info
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Cliente: ${quotationData?.client || 'N/A'}`, margin, y);
+    y += 6;
+    doc.text(`Proyecto: ${quotationData?.project || 'N/A'}`, margin, y);
+    y += 15;
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
-              {content.groups.map((group, groupIndex) => (
-                <div key={group.id} className="bg-gray-900/50 rounded-2xl border border-gray-800">
-                  <div
-                    className="p-4 flex justify-between items-center cursor-pointer"
-                    onClick={() => handleGroupFieldChange(groupIndex, 'isOpen', !group.isOpen)}
-                  >
-                    <div className="flex items-center gap-4 flex-grow">
-                      <EditableField
-                        value={group.title}
-                        isEditorMode={isEditorMode}
-                        onSave={(val) => handleGroupFieldChange(groupIndex, 'title', val)}
-                        className="text-xl font-bold"
-                        placeholder="Título del Grupo"
-                      />
-                      <span className="text-sm text-gray-400 flex-shrink-0">
-                        Total: {formatCurrency(groupTotals[groupIndex], content.currency)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {isEditorMode && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveGroup(groupIndex);
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4 text-red-500" />
-                        </Button>
-                      )}
-                      {group.isOpen ? <ChevronUp /> : <ChevronDown />}
-                    </div>
-                  </div>
+    // Items Table
+    const tableBody = activeItems.map((item, index) => [
+      `${index + 1}. ${item.title}\n${item.subtitle}`,
+      `${item.kw} KW`,
+      formatCurrency(item.price, content.currency)
+    ]);
 
-                  <AnimatePresence>
-                    {group.isOpen && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {group.items.map((item, itemIndex) => {
-                            const Icon = iconMap[item.icon] || DollarSign;
-                            return (
-                              <motion.div
-                                key={item.id}
-                                layout
-                                className={cn('bg-black/30 rounded-lg p-4 border transition-colors hover:border-blue-500', item.isActive ? 'border-primary/30' : 'border-gray-800')}
-                              >
-                                <div className="flex items-start justify-between mb-2">
-                                  <div className="flex-1">
-                                    <div className="flex items-start gap-3">
-                                      {isEditorMode ? (
-                                        <IconPicker value={item.icon} onChange={(newIcon) => handleFieldChange(groupIndex, itemIndex, 'icon', newIcon)}>
-                                          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
-                                            <Icon className="w-5 h-5 text-primary" />
-                                          </Button>
-                                        </IconPicker>
-                                      ) : (
-                                        <Icon className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
-                                      )}
-                                      <div className="flex items-baseline gap-2">
-                                        <span className="font-bold">{itemIndex + 1}.</span>
-                                        <EditableField value={item.title} isEditorMode={isEditorMode} onSave={(val) => handleFieldChange(groupIndex, itemIndex, 'title', val)} className={cn("font-bold", item.isActive && "border-b-2 border-primary pb-1")} placeholder="Título del Item" />
-                                      </div>
-                                    </div>
-                                    <div className="pl-11">
-                                      <EditableField value={item.subtitle} isEditorMode={isEditorMode} onSave={(val) => handleFieldChange(groupIndex, itemIndex, 'subtitle', val)} className="text-sm text-gray-400 mt-1" placeholder="Descripción del item" />
-                                    </div>
-                                  </div>
-                                  <PowerButtons isChecked={item.isActive} onCheckedChange={(val) => handleFieldChange(groupIndex, itemIndex, 'isActive', val)} />
-                                </div>
+    doc.autoTable({
+      startY: y,
+      head: [['Descripción', 'Potencia', 'Importe']],
+      body: tableBody,
+      theme: 'grid',
+      headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255], fontStyle: 'bold' },
+      styles: { cellPadding: 4, fontSize: 10 },
+      columnStyles: { 
+        1: { halign: 'center' },
+        2: { halign: 'right', fontStyle: 'bold' } 
+      }
+    });
 
-                                <div className="mt-4 flex items-center justify-between gap-4">
-                                  <div className="flex-1">
-                                    <EditableField value={formatCurrency(item.price, content.currency)} isEditorMode={isEditorMode} onSave={(val) => handlePriceChange(groupIndex, itemIndex, val)} className={cn('bg-gray-800/50 px-4 py-2 rounded-lg font-bold text-lg transition-all', !item.isActive && 'line-through text-gray-500')} placeholder="$0.00" />
-                                  </div>
-                                  <div className="flex flex-col items-end w-32">
-                                    <span className="text-xs text-gray-400 mb-1">kW instalados</span>
-                                    <EditableField value={String(item.kw ?? 0)} isEditorMode={isEditorMode} onSave={(val) => handleKwChange(groupIndex, itemIndex, val)} className="bg-gray-800/50 px-3 py-1 rounded-lg text-sm text-right" placeholder="0" />
-                                  </div>
-                                  {isEditorMode && (
-                                    <div className="flex items-center">
-                                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleMoveItem(groupIndex, itemIndex, -1)}><ArrowUp size={14} /></Button>
-                                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleMoveItem(groupIndex, itemIndex, 1)}><ArrowDown size={14} /></Button>
-                                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDuplicateItem(groupIndex, itemIndex)}><Copy size={14} /></Button>
-                                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveItem(groupIndex, itemIndex)}><Trash2 size={14} className="text-red-500" /></Button>
-                                    </div>
-                                  )}
-                                </div>
-                              </motion.div>
-                            );
-                          })}
-                        </div>
-                        {isEditorMode && (
-                          <div className="p-4 text-center">
-                            <Button variant="outline" onClick={() => handleAddItem(groupIndex)}>+ Añadir Item al Grupo</Button>
-                          </div>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              ))}
-              {isEditorMode && (
-                <div className="text-center">
-                  <Button onClick={handleAddGroup}>+ Añadir Nuevo Grupo</Button>
-                </div>
-              )}
+    y = doc.lastAutoTable.finalY + 10;
+    const rightColX = 140;
+    const valColX = 196;
+
+    // Summary Section
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    
+    // KW Sum
+    doc.text(`Potencia Total:`, rightColX, y);
+    doc.text(`${totalKW.toFixed(2)} KW`, valColX, y, { align: 'right' });
+    y += 6;
+
+    // Subtotal
+    doc.text(`Subtotal:`, rightColX, y);
+    doc.text(formatCurrency(subtotal, content.currency), valColX, y, { align: 'right' });
+    y += 6;
+    
+    // IVA
+    doc.text(`I.V.A (${content.taxRate}%):`, rightColX, y);
+    doc.text(formatCurrency(totalTax, content.currency), valColX, y, { align: 'right' });
+    y += 8;
+
+    // Total USD
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`TOTAL (${content.currency}):`, rightColX, y);
+    doc.setTextColor(37, 99, 235); // Blue
+    doc.text(formatCurrency(totalUSD, content.currency), valColX, y, { align: 'right' });
+    y += 10;
+
+    // Exchange Rate & MXN
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100); // Gray
+    doc.setFont('helvetica', 'normal');
+    doc.text(`T.C. estimado:`, rightColX, y);
+    doc.text(`$${content.exchangeRate} MXN`, valColX, y, { align: 'right' });
+    y += 6;
+    
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`TOTAL (MXN):`, rightColX, y);
+    doc.text(formatCurrency(totalMXN, 'MXN'), valColX, y, { align: 'right' });
+
+    doc.save('propuesta_economica_completa.pdf');
+    toast({ title: "PDF Generado", description: "Incluye desglose, KW y conversión a pesos." });
+  };
+
+  const toggleAdminMode = () => {
+    setLocalAdminMode(prev => !prev);
+    toast({
+      title: !localAdminMode ? "Modo Admin Activado" : "Modo Admin Desactivado",
+      description: !localAdminMode ? "Ahora puedes editar el contenido y la estructura." : "Estás en modo visualización.",
+      variant: !localAdminMode ? "default" : "secondary"
+    });
+  };
+
+  // Render Helpers for Right Panel
+  const renderRightPanelContent = () => {
+    if (activeSelection.type === 'general') {
+      return (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="flex items-center gap-2 border-b border-gray-800 pb-4 mb-6">
+            <Settings className="w-6 h-6 text-blue-500" />
+            <h2 className="text-xl font-bold text-white">Configuración General</h2>
+          </div>
+          <div className="grid grid-cols-1 gap-6">
+            <div className="space-y-2">
+              <Label className="text-gray-400">Título Principal</Label>
+              <Input 
+                value={content.pageTitle || ''}
+                onChange={(e) => updateContent({...content, pageTitle: e.target.value})}
+                className="bg-gray-950 border-gray-800 focus:border-blue-500 transition-colors"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-gray-400">Título Destacado (Azul)</Label>
+              <Input 
+                value={content.pageTitleHighlight || ''}
+                onChange={(e) => updateContent({...content, pageTitleHighlight: e.target.value})}
+                className="bg-gray-950 border-gray-800 focus:border-blue-500 transition-colors"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-gray-400">Descripción de la Página</Label>
+              <Input 
+                value={content.pageDescription || ''}
+                onChange={(e) => updateContent({...content, pageDescription: e.target.value})}
+                className="bg-gray-950 border-gray-800 focus:border-blue-500 transition-colors"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-gray-400">Moneda</Label>
+                <Input 
+                  value={content.currency || 'USD'}
+                  onChange={(e) => updateContent({...content, currency: e.target.value})}
+                  className="bg-gray-950 border-gray-800 focus:border-blue-500 transition-colors"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-gray-400">Impuesto (%)</Label>
+                <Input 
+                  type="number"
+                  value={content.taxRate || 0}
+                  onChange={(e) => updateContent({...content, taxRate: parseFloat(e.target.value) || 0})}
+                  className="bg-gray-950 border-gray-800 focus:border-blue-500 transition-colors"
+                />
+              </div>
             </div>
 
-            <div className="lg:col-span-1">
-              <div className="sticky top-24 bg-gray-900 rounded-2xl p-6 border border-gray-800">
-                <h3 className="text-2xl font-bold mb-4">Resumen de Inversión</h3>
-                <div className="space-y-3 text-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Subtotal:</span>
-                    <span className="font-semibold">{formatCurrency(total, content.currency)}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xl sm:text-3xl">
-                    <span className="font-bold text-primary">SUBTOTAL:</span>
-                    <span className="font-bold text-primary">{formatCurrency(total, content.currency)}</span>
-                  </div>
-                </div>
+            {/* 3) & 8) Campo Tipo de Cambio */}
+            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+               <div className="space-y-2">
+                  <Label className="text-blue-400 font-bold flex items-center gap-2">
+                     <DollarSign className="w-4 h-4" />
+                     Tipo de Cambio (USD a MXN)
+                  </Label>
+                  <Input 
+                     type="number"
+                     step="0.1"
+                     value={content.exchangeRate}
+                     onChange={(e) => updateContent({...content, exchangeRate: parseFloat(e.target.value) || 0})}
+                     className="bg-black border-blue-500/50 focus:border-blue-400 text-white font-mono text-lg"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Se utilizará para calcular el estimado en moneda nacional en la propuesta.
+                  </p>
+               </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-                <div className="mt-4 border-t border-gray-700 pt-3 text-sm">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Potencia instalada total:</span>
-                    <span className="font-semibold">{totalKw.toFixed(2)} kW</span>
-                  </div>
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="text-gray-400">Moneda:</span>
-                    <EditableField value={content.currency} isEditorMode={isEditorMode} onSave={(val) => handleContentFieldChange('currency', val.toUpperCase())} className="text-right font-semibold" inputClassName="text-right w-20" />
-                  </div>
-                </div>
+    if (activeSelection.type === 'group') {
+      const group = content.groups.find(g => g.id === activeSelection.id);
+      if (!group) return <div className="text-gray-500 p-4">Grupo no encontrado</div>;
 
-                <div className="text-sm text-gray-500 mt-2 text-right flex items-center justify-end">
-                  PRECIOS MÁS&nbsp;
-                  <EditableField value={content.taxRate} isEditorMode={isEditorMode} onSave={(val) => handleContentFieldChange('taxRate', parseFloat(val) || 0)} className="inline-block" inputClassName="w-12 text-right" />
-                  % DE I.V.A.
-                </div>
+      return (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="flex items-center justify-between border-b border-gray-800 pb-4 mb-6">
+            <div className="flex items-center gap-2">
+              <FolderOpen className="w-6 h-6 text-blue-500" />
+              <h2 className="text-xl font-bold text-white">Editar Grupo</h2>
+            </div>
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={() => handleDeleteGroup(group.id)}
+            >
+              <Trash2 className="w-4 h-4 mr-2" /> Eliminar Grupo
+            </Button>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-gray-400">Nombre del Grupo</Label>
+            <Input 
+              value={group.title}
+              onChange={(e) => handleGroupTitleChange(group.id, e.target.value)}
+              className="bg-gray-950 border-gray-800 focus:border-blue-500 transition-colors text-lg font-semibold"
+            />
+          </div>
+          <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-800 mt-6">
+             <h4 className="text-sm font-medium text-gray-400 mb-2">Resumen del Grupo</h4>
+             <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>Items: <span className="text-white">{group.items.length}</span></div>
+                <div>Total: <span className="text-blue-400">{formatCurrency(group.items.reduce((sum, i) => sum + (parseFloat(i.price)||0), 0), content.currency)}</span></div>
+             </div>
+          </div>
+        </div>
+      );
+    }
 
-                {isEditorMode && (
-                  <div className="mt-6 p-4 border border-dashed border-gray-700 rounded-lg">
-                    <h4 className="text-lg font-semibold mb-2 text-primary">Firma del Vendedor</h4>
+    if (activeSelection.type === 'item') {
+      const group = content.groups.find(g => g.id === activeSelection.groupId);
+      const item = group?.items.find(i => i.id === activeSelection.id);
+      
+      if (!item || !group) return <div className="text-gray-500 p-4">Item no encontrado</div>;
+
+      return (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="flex items-center justify-between border-b border-gray-800 pb-4 mb-6">
+             <div className="flex items-center gap-2">
+              <Box className="w-6 h-6 text-blue-500" />
+              <h2 className="text-xl font-bold text-white">Editar Item</h2>
+             </div>
+             <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={() => handleDeleteItem(group.id, item.id)}
+            >
+              <Trash2 className="w-4 h-4 mr-2" /> Eliminar Item
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6">
+             <div className="grid grid-cols-4 gap-6">
+                <div className="col-span-1 space-y-2">
+                   <Label className="text-gray-400">Icono</Label>
+                   <IconPicker 
+                      value={item.icon} 
+                      onChange={(val) => handleItemChange(group.id, item.id, 'icon', val)}
+                      isEditorMode={true}
+                    >
+                        <div className="w-full aspect-square rounded-lg border border-gray-800 bg-gray-950 flex items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-gray-900 transition-all">
+                            {React.createElement(iconMap[item.icon] || iconMap.Box, { size: 32, className: "text-blue-500" })}
+                        </div>
+                    </IconPicker>
+                </div>
+                <div className="col-span-3 space-y-4">
                     <div className="space-y-2">
-                      <EditableField value={content.sellerName || ''} onSave={(val) => handleContentFieldChange('sellerName', val)} isEditorMode={isEditorMode} className="text-sm" placeholder="Nombre del Vendedor" />
-                      <EditableField value={content.sellerDepartment || ''} onSave={(val) => handleContentFieldChange('sellerDepartment', val)} isEditorMode={isEditorMode} className="text-sm" placeholder="Cargo / Departamento" />
+                      <Label className="text-gray-400">Título</Label>
+                      <Input 
+                        value={item.title}
+                        onChange={(e) => handleItemChange(group.id, item.id, 'title', e.target.value)}
+                        className="bg-gray-950 border-gray-800 focus:border-blue-500 transition-colors font-semibold"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-gray-400">Subtítulo</Label>
+                      <Input 
+                        value={item.subtitle}
+                        onChange={(e) => handleItemChange(group.id, item.id, 'subtitle', e.target.value)}
+                        className="bg-gray-950 border-gray-800 focus:border-blue-500 transition-colors"
+                      />
+                    </div>
+                </div>
+             </div>
+
+             <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-gray-400">Precio ({content.currency})</Label>
+                  <Input 
+                    type="number"
+                    value={item.price}
+                    onChange={(e) => handleItemChange(group.id, item.id, 'price', parseFloat(e.target.value) || 0)}
+                    className="bg-gray-950 border-gray-800 focus:border-blue-500 transition-colors font-mono text-blue-400 text-lg"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-gray-400">Potencia (KW)</Label>
+                  <Input 
+                    type="number"
+                    value={item.kw}
+                    onChange={(e) => handleItemChange(group.id, item.id, 'kw', parseFloat(e.target.value) || 0)}
+                    className="bg-gray-950 border-gray-800 focus:border-blue-500 transition-colors font-mono"
+                  />
+                </div>
+             </div>
+
+             <div className="flex items-center justify-between bg-gray-900/30 p-4 rounded-lg border border-gray-800">
+                <div className="space-y-1">
+                   <Label className="text-gray-200">Estado Activo</Label>
+                   <p className="text-xs text-gray-500">Determina si este item se incluye en el cálculo total.</p>
+                </div>
+                <Switch 
+                  checked={item.isActive}
+                  onCheckedChange={(val) => handleItemChange(group.id, item.id, 'isActive', val)}
+                  className="data-[state=checked]:bg-blue-500"
+                />
+             </div>
+          </div>
+        </div>
+      );
+    }
+
+    return <div className="flex items-center justify-center h-full text-gray-500">Selecciona un elemento para editar</div>;
+  };
+
+  return (
+    <div className="w-full bg-black text-white min-h-screen p-6 sm:p-12 font-sans relative">
+      {/* Admin Toggle - Visible on Page */}
+      <div className="absolute top-6 right-6 z-50 flex gap-2">
+         <Button 
+            variant="outline" 
+            size="sm"
+            onClick={toggleAdminMode}
+            className={cn(
+                "border-gray-800 transition-all gap-2",
+                localAdminMode ? "bg-blue-900/20 text-blue-400 border-blue-500/50 hover:bg-blue-900/40" : "bg-black text-gray-500 hover:text-white"
+            )}
+         >
+            {localAdminMode ? <Unlock size={14} /> : <Lock size={14} />}
+            {localAdminMode ? "Admin Activo" : "Admin"}
+         </Button>
+      </div>
+
+      {/* Header */}
+      <div className="text-center mb-12 pt-8">
+        <h1 className="text-4xl sm:text-6xl font-black tracking-tight mb-4 uppercase">
+          {content.pageTitle || 'PROPUESTA'} <span className="text-blue-500">{content.pageTitleHighlight || 'ECONÓMICA'}</span>
+        </h1>
+        <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+          {content.pageDescription || 'Aquí puedes ver el desglose de la inversión. Marca o desmarca los componentes para ajustar el costo total.'}
+        </p>
+      </div>
+
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Main Content Column - View Mode */}
+          <div className="lg:col-span-2 space-y-8">
+            {content.groups.map((group) => {
+               const groupTotal = group.items.filter(i => i.isActive).reduce((sum, i) => sum + (parseFloat(i.price)||0), 0);
+
+               return (
+              <div key={group.id} className="bg-[#111] rounded-xl border border-gray-800 overflow-hidden">
+                <div className="bg-[#1a1a1a] px-6 py-4 border-b border-gray-800 flex justify-between items-center">
+                  <div>
+                    <h3 className="text-xl font-bold text-white">{group.title}</h3>
+                    <div className="text-sm text-blue-500 font-medium mt-1">
+                      Total del Grupo: {formatCurrency(groupTotal, content.currency)}
                     </div>
                   </div>
-                )}
+                </div>
 
-                <div className="mt-6 space-y-3">
-                  <Button size="lg" className="w-full bg-primary hover:bg-primary/90 text-black font-bold" onClick={() => toast({ title: '🚧 Selección guardada (simulado).' })}>Guardar Selección</Button>
-                  {isEditorMode && (
-                    <Button variant="secondary" size="lg" className="w-full flex items-center gap-2" onClick={() => setShowPreview(true)}>
-                      <EyeIcon size={16} /> Vista Previa PDF
-                    </Button>
+                <div className="p-4 sm:p-6">
+                  <StrictModeDroppable droppableId={group.id}>
+                    {(provided) => (
+                      <div {...provided.droppableProps} ref={provided.innerRef} className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                        {group.items.map((item, index) => {
+                          const Icon = iconMap[item.icon] || iconMap.Box;
+                          return (
+                            <Draggable 
+                              key={item.id} 
+                              draggableId={item.id} 
+                              index={index}
+                              isDragDisabled={!isModeAdmin}
+                            >
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  className={cn(
+                                    "relative flex flex-col justify-between bg-[#0a0a0a] p-5 rounded-lg border transition-all duration-200 h-full select-none",
+                                    item.isActive ? "border-gray-700 hover:border-blue-500/50" : "border-gray-800 opacity-60",
+                                    snapshot.isDragging && "border-blue-500 shadow-lg z-50",
+                                    !isModeAdmin && "cursor-default"
+                                  )}
+                                >
+                                  <div className="flex justify-between items-start mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                            "w-10 h-10 rounded-md flex items-center justify-center border",
+                                            item.isActive ? "bg-blue-500/10 border-blue-500 text-blue-500" : "bg-gray-800 border-gray-700 text-gray-500"
+                                        )}>
+                                            <Icon size={20} />
+                                        </div>
+                                        <div className="space-y-0.5">
+                                           <div className="flex items-center gap-2">
+                                              <span className="text-blue-500 font-bold text-sm">{index + 1}.</span>
+                                              <span className="font-bold text-sm text-white uppercase">{item.title}</span>
+                                           </div>
+                                           <p className="text-gray-400 text-xs">{item.subtitle}</p>
+                                        </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="mt-auto pt-4 border-t border-gray-800/50 flex items-center justify-between">
+                                     <div className="font-mono font-bold text-white">
+                                        {formatCurrency(item.price, content.currency)}
+                                     </div>
+                                     <div className="flex items-center gap-3">
+                                        {/* KW display for individual items */}
+                                        <div className="flex items-center text-yellow-500 gap-1 bg-yellow-900/20 px-2 py-1 rounded border border-yellow-500/20">
+                                           <Zap size={10} />
+                                           <span className="text-[10px] font-mono">{item.kw} KW</span>
+                                        </div>
+                                        
+                                        <Switch 
+                                            checked={item.isActive}
+                                            onCheckedChange={(val) => handleItemChange(group.id, item.id, 'isActive', val)}
+                                            className="data-[state=checked]:bg-blue-500 scale-75"
+                                        />
+                                     </div>
+                                  </div>
+                                </div>
+                              )}
+                            </Draggable>
+                          );
+                        })}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </StrictModeDroppable>
+                </div>
+              </div>
+            )})}
+          </div>
+
+          {/* Sidebar Summary */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-8">
+              <div className="bg-[#111] rounded-2xl border border-gray-800 p-6 shadow-2xl shadow-black/50">
+                <h3 className="text-xl font-bold text-white mb-6">Resumen de Inversión</h3>
+                
+                <div className="space-y-3 mb-6 text-sm">
+                  <div className="flex justify-between text-gray-400">
+                    <span>Subtotal:</span>
+                    <span className="font-mono text-white">{formatCurrency(subtotal, content.currency)}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-400">
+                     <div className="flex items-center gap-1">
+                        <span>I.V.A ({content.taxRate}%):</span>
+                     </div>
+                    <span className="font-mono text-white">{formatCurrency(totalTax, content.currency)}</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-800 pt-6 mb-6 space-y-2">
+                  <div className="flex justify-between items-end">
+                    <span className="text-blue-500 font-bold text-xl uppercase">TOTAL {content.currency}:</span>
+                    <div className="text-right">
+                       <div className="text-2xl font-black text-blue-500">
+                         {formatCurrency(totalUSD, content.currency)}
+                       </div>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-gray-500 font-medium tracking-wider uppercase text-right">
+                     PRECIOS MÁS {content.taxRate}% DE I.V.A
+                  </p>
+                </div>
+                
+                {/* 2) Show Total KW */}
+                <div className="bg-yellow-900/10 border border-yellow-500/20 rounded-lg p-3 mb-4 flex justify-between items-center">
+                    <div className="flex items-center gap-2 text-yellow-500">
+                       <Zap size={16} />
+                       <span className="text-xs font-bold uppercase tracking-wide">Potencia Instalada Total</span>
+                    </div>
+                    <span className="font-mono text-white font-bold text-lg">{totalKW.toFixed(2)} KW</span>
+                </div>
+                
+                {/* 5) Show Total MXN */}
+                <div className="bg-gray-900 rounded-lg p-3 mb-6 border border-gray-800">
+                   <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <span>T.C. Estimado</span>
+                      <span>${content.exchangeRate} MXN</span>
+                   </div>
+                   <div className="flex justify-between items-end">
+                      <span className="text-gray-300 font-bold text-sm uppercase">Total (MXN):</span>
+                      <span className="font-mono text-white font-bold text-xl">{formatCurrency(totalMXN, 'MXN')}</span>
+                   </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Button 
+                    className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
+                    onClick={() => toast({ title: "Guardado", description: "Selección almacenada correctamente." })}
+                  >
+                    <Save size={18} className="mr-2" /> Guardar Selección
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-gray-700 text-white hover:bg-gray-800"
+                    onClick={generatePDF}
+                  >
+                    <FileText size={18} className="mr-2" /> Generar Cotización PDF
+                  </Button>
+
+                  {/* Split-Pane Modal - Controlled by Admin Mode */}
+                  {isModeAdmin && (
+                    <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          className="w-full border-blue-900/50 bg-blue-900/10 text-blue-400 hover:bg-blue-900/30 hover:text-blue-300 transition-all"
+                        >
+                          <Edit size={18} className="mr-2" /> Editar Estructura y Precios
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[1200px] w-full h-[85vh] flex flex-col bg-black border-gray-800 text-white p-0 gap-0 overflow-hidden">
+                        <DialogHeader className="shrink-0 p-4 border-b border-gray-800 bg-[#0a0a0a] flex flex-row items-center justify-between">
+                           <DialogTitle className="text-lg font-bold flex items-center gap-2">
+                              <LayoutGrid className="w-5 h-5 text-blue-500" />
+                              Editor de Propuesta
+                           </DialogTitle>
+                           <div className="flex gap-2 mr-8">
+                              <input id="import-json" type="file" className="hidden" accept=".json" onChange={handleImport} />
+                              <Button variant="ghost" size="sm" className="text-xs text-gray-500 hover:text-white h-7" onClick={() => document.getElementById('import-json').click()}>
+                                  <Upload size={12} className="mr-1" /> Importar
+                              </Button>
+                              <Button variant="ghost" size="sm" className="text-xs text-gray-500 hover:text-white h-7" onClick={handleExport}>
+                                  <Download size={12} className="mr-1" /> Exportar
+                              </Button>
+                           </div>
+                        </DialogHeader>
+                        
+                        <div className="flex-1 flex flex-row overflow-hidden">
+                          
+                          {/* LEFT PANEL: Tree View */}
+                          <div className="w-80 md:w-96 shrink-0 border-r border-gray-800 flex flex-col bg-[#0f0f0f]">
+                              <div className="p-4 border-b border-gray-800 flex justify-between items-center">
+                                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Estructura</span>
+                                  <Button size="sm" variant="ghost" onClick={handleAddGroup} className="h-7 text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 text-xs">
+                                      <Plus size={12} className="mr-1" /> Grupo
+                                  </Button>
+                              </div>
+
+                              <ScrollArea className="flex-1">
+                                  <div className="p-2 space-y-1">
+                                      {/* General Config Node */}
+                                      <div 
+                                          onClick={() => setActiveSelection({ type: 'general', id: 'general' })}
+                                          className={cn(
+                                              "flex items-center gap-3 p-2 rounded-md cursor-pointer transition-all text-sm",
+                                              activeSelection.type === 'general' ? "bg-blue-900/30 text-white border border-blue-500/30" : "text-gray-400 hover:bg-gray-800 hover:text-gray-200"
+                                          )}
+                                      >
+                                          <Settings size={16} />
+                                          <span className="font-medium">Configuración General</span>
+                                      </div>
+
+                                      {/* Groups List */}
+                                      {content.groups.map((group) => (
+                                          <div key={group.id} className="space-y-1 pt-2">
+                                              <div 
+                                                  className={cn(
+                                                      "flex items-center justify-between p-2 rounded-md cursor-pointer transition-all group",
+                                                      activeSelection.type === 'group' && activeSelection.id === group.id ? "bg-blue-900/30 text-white border border-blue-500/30" : "text-gray-400 hover:bg-gray-800 hover:text-gray-200"
+                                                  )}
+                                                  onClick={() => setActiveSelection({ type: 'group', id: group.id })}
+                                              >
+                                                  <div className="flex items-center gap-2 overflow-hidden">
+                                                      <button 
+                                                          onClick={(e) => { e.stopPropagation(); toggleGroupExpand(group.id); }}
+                                                          className="p-0.5 hover:bg-gray-700 rounded"
+                                                      >
+                                                          {expandedGroups[group.id] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                                      </button>
+                                                      <FolderOpen size={16} className={cn(activeSelection.id === group.id ? "text-blue-400" : "text-gray-500")} />
+                                                      <span className="font-medium truncate text-sm">{group.title}</span>
+                                                  </div>
+                                              </div>
+
+                                              {expandedGroups[group.id] && (
+                                                  <div className="pl-6 space-y-0.5 border-l border-gray-800 ml-4">
+                                                      {group.items.map((item) => (
+                                                          <div 
+                                                              key={item.id}
+                                                              onClick={() => setActiveSelection({ type: 'item', id: item.id, groupId: group.id })}
+                                                              className={cn(
+                                                                  "flex items-center gap-2 p-2 rounded-md cursor-pointer transition-all text-xs",
+                                                                  activeSelection.type === 'item' && activeSelection.id === item.id ? "bg-blue-900/20 text-blue-200 border border-blue-500/20" : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
+                                                              )}
+                                                          >
+                                                              <Box size={14} />
+                                                              <span className="truncate">{item.title}</span>
+                                                          </div>
+                                                      ))}
+                                                      <Button 
+                                                          variant="ghost" 
+                                                          size="sm" 
+                                                          className="w-full justify-start text-xs text-gray-600 hover:text-blue-400 h-7 pl-2"
+                                                          onClick={() => handleAddItem(group.id)}
+                                                      >
+                                                          <Plus size={12} className="mr-2" /> Item
+                                                      </Button>
+                                                  </div>
+                                              )}
+                                          </div>
+                                      ))}
+                                  </div>
+                              </ScrollArea>
+                          </div>
+
+                          {/* RIGHT PANEL: Editor Form */}
+                          <div className="flex-1 bg-black flex flex-col h-full overflow-hidden">
+                             <ScrollArea className="flex-1">
+                                  <div className="p-8 max-w-3xl mx-auto">
+                                      {renderRightPanelContent()}
+                                  </div>
+                             </ScrollArea>
+                          </div>
+
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   )}
-                  <Button variant="outline" size="lg" className="w-full" onClick={handleGeneratePDF}>Generar Cotización PDF</Button>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </>
+      </DragDropContext>
+    </div>
   );
 };
 

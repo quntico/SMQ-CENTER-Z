@@ -1,74 +1,12 @@
-import { FileText, ClipboardList, Calendar, Package, LayoutGrid, Video, TrendingUp, Calculator, FileDown, BrainCircuit, Home, Settings, User, Search, Menu, Sparkles, Building2, FolderKanban, User as UserIcon, Eye, EyeOff, Trash2, ArrowUp, ArrowDown, Copy, GripVertical, CheckCircle, Wrench, Ship, Truck, Clock, Palette, Scale, Upload, Image, Loader2, Minimize, Timer, PlaySquare, X, Save, Eraser, Lock, Unlock, FilePlus, Edit, Download, Plus, Star, Heart, Smile, ThumbsUp, ThumbsDown, AlertCircle, HelpCircle, Info, Link, Mail, Phone, MapPin, Camera, Mic, File, Folder, Database, Server, Code, Terminal, GitBranch, Filter, List, Grid, BarChart, PieChart, LineChart, Award, Badge, Bell, Bookmark, Briefcase, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsUpDown, Clipboard, Coffee, Command, Compass, CreditCard, Crop, Disc, ExternalLink, Feather, Figma, Framer, Github, Globe, HardDrive, Hash, Headphones, Inbox, Key, Laptop, Layers, LifeBuoy, LogIn, LogOut, Maximize, MessageCircle, Moon, MoreHorizontal, MousePointer, Move, Music, Paperclip, Pause, PenTool, Percent, Pin, Pocket, Power, Printer, Redo, RefreshCw, Repeat, RotateCw, Rss, Scissors, Share, Shield, ShoppingBag, ListChecks, Zap, Wind, AirVent, AlarmClock, AlignCenter, AlignJustify, AlignLeft, AlignRight, Anchor, Aperture, Archive, ArrowBigDown, ArrowBigLeft, ArrowBigRight, ArrowBigUp, Asterisk, AtSign, Axe, Baby, Backpack, BaggageClaim, Banana, Banknote, Baseline, Bath, Battery, BatteryCharging, BatteryFull, BatteryLow, Beaker, Bean, Bed, Beef, Beer, BellRing, Bike, Binary, Biohazard, Bitcoin, Blinds, Blocks, Bold, Bomb, Bone, Book, Bot, Box, BoxSelect, Braces, Brackets, Brain, Briefcase as BriefcaseMedical, Brush, Bug, Building, Bus, Cake, Candy, Car, Carrot, CaseLower, CaseUpper, Castle, Cat, Check, Cherry, ChevronFirst, ChevronLast, Church, Cigarette, Circle, Clapperboard, ClipboardCopy, ClipboardPaste, Cloud, CloudCog, CloudDrizzle, CloudFog, CloudHail, CloudLightning, CloudMoon, CloudOff, CloudRain, CloudSnow, CloudSun, Clover, Club, Code2, Codepen, Coins, Columns, Contact, Contrast, Cookie, Utensils as CookingPot, CornerDownLeft, CornerDownRight, CornerLeftDown, CornerLeftUp, CornerRightDown, CornerUpLeft, CornerUpRight, Cpu, CreativeCommons, Crown, CupSoda, Currency, Dices, Diff, Dna, Dog, DollarSign, Donut, DoorClosed, DoorOpen, Disc as Draft, Hammer as Drill, Droplet, Dumbbell, Ear, Egg, Equal, Euro, Expand, Factory, Fan, Frame as Fence, FileArchive, FileAudio, FileBadge, FileCheck, FileCode, FileDiff, FileDigit, FileImage, FileInput, FileJson, FileKey, FileLock, FileMinus, FileOutput, FilePieChart, FileQuestion, FileScan, FileSearch, FileSignature, FileSpreadsheet, FileSymlink, FileTerminal, FileType, FileVideo, FileVolume, FileWarning, FileX, Files, Film, Fingerprint, Flag, Flame, Flashlight, FlaskConical, Flower, FolderArchive, FolderCheck, FolderClock, FolderClosed, FolderCog, FolderDot, FolderDown, FolderEdit, FolderGit, FolderGit2, FolderHeart, FolderInput, FolderKey, FolderLock, FolderMinus, FolderOpen, FolderOutput, FolderPlus, FolderRoot, FolderSearch, Settings as FolderSettings, FolderSymlink, FolderSync, FolderTree, FolderUp, FolderX, Folders, Footprints, Forklift, FormInput, Forward, Frame, Frown, Fuel, FunctionSquare, Gamepad, Gamepad2, Gauge, Gavel, Gem, Ghost, Gift, GitCommit, GitCompare, GitFork, GitMerge, GitPullRequest, GitPullRequestDraft, Gitlab, Glasses, Wheat as Grains, Grape, Hammer, Hand, HeartHandshake as Handshake, HardHat, Heading, HeartCrack, HeartHandshake, HeartPulse, Thermometer as Heater, Hexagon, Highlighter, History, Hotel, Hourglass, IceCream, Import, Indent, IndianRupee, Infinity, Italic, Joystick, Kanban, Lamp, Landmark, Languages, Lasso, Leaf, Library, Lightbulb, Link2, ListEnd, ListFilter, ListMusic, ListOrdered, ListPlus, ListRestart, ListTree, ListVideo, ListX, Loader, Locate, LocateFixed, LockKeyhole, Lollipop, Luggage, Magnet, Mailbox, Mails, Map, Martini, Medal, Megaphone, Milestone, Milk, Minus, Monitor, Mountain, Mouse, Palmtree, PanelBottom, PanelLeft, PanelRight, PanelTop, ParkingCircle, PartyPopper, PawPrint, PersonStanding, PhoneCall, PhoneForwarded, PhoneIncoming, PhoneOff, PhoneOutgoing, PictureInPicture, PictureInPicture2, Pilcrow, Pill, Pizza, Plane, Plug, Popsicle, PoundSterling, Projector, Puzzle, QrCode, Quote, Rabbit, Radar, Radiation, Radio, RadioReceiver, RadioTower, Rat, Receipt, RectangleHorizontal, RectangleVertical, Recycle, Refrigerator, Regex, RemoveFormatting, Replace, Reply, ReplyAll, Rocket, RollerCoaster, Router, Ruler, RussianRuble, Sailboat, Salad, Sandwich, Scale3d, Scaling, Scan, ScanFace, ScanLine, School, Scroll, ScrollText, Send, SeparatorHorizontal, SeparatorVertical, Settings2, Shapes, Share2, Sheet, Shell, Shirt, ShoppingCart, Shovel, ShowerHead, Shrink, Shrub, Signal, Siren, SkipBack, SkipForward, Skull, Sliders, SlidersHorizontal, Smartphone, Snowflake, Plug as Socket, Soup, Space, Speaker, Spline, SprayCan, Square, Squirrel, Stamp, StepBack, StepForward, Stethoscope, Sticker, FileCog, XCircle, ClipboardSignature } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 
-export const iconMap = {
-  FileText, ClipboardList, Calendar, Package, LayoutGrid, Video, TrendingUp,
-  Calculator, FileDown, BrainCircuit, Home, Settings, User: UserIcon, Search, Menu,
-  Sparkles, Building2, FolderKanban, Eye, EyeOff, Trash2, ArrowUp, ArrowDown,
-  Copy, GripVertical, CheckCircle, Wrench, Ship, Truck, Clock, Palette, Scale,
-  Upload, Image, Loader2, Minimize, Timer, PlaySquare, X, Save, Eraser,
-  Lock, Unlock, FilePlus, Edit, Download, Plus, Star, Heart, Smile, ThumbsUp,
-  ThumbsDown, AlertCircle, HelpCircle, Info, Link, Mail, Phone, MapPin,
-  Camera, Mic, File, Folder, Database, Server, Code, Terminal, GitBranch,
-  Filter, List, Grid, BarChart, PieChart, LineChart, Award, Badge, Bell,
-  Bookmark, Briefcase, CalendarDays, ChevronDown, ChevronLeft, ChevronRight,
-  ChevronUp, ChevronsUpDown, Clipboard, Coffee, Command, Compass, CreditCard,
-  Crop, Disc, ExternalLink, Feather, Figma, Framer, Github, Globe, HardDrive,
-  Hash, Headphones, Inbox, Key, Laptop, Layers, LifeBuoy, LogIn, LogOut,
-  Maximize, MessageCircle, Moon, MoreHorizontal, MousePointer, Move, Music,
-  Paperclip, Pause, PenTool, Percent, Pin, Pocket, Power, Printer, Redo,
-  RefreshCw, Repeat, RotateCw, Rss, Scissors, Share, Shield, ShoppingBag,
-  ListChecks, Zap, Wind, BriefcaseMedical, XCircle, Briefcase,
-  AirVent, AlarmClock, AlignCenter, AlignJustify, AlignLeft, AlignRight, Anchor,
-  Aperture, Archive, ArrowBigDown, ArrowBigLeft, ArrowBigRight, ArrowBigUp,
-  Asterisk, AtSign, Axe, Baby, Backpack, BaggageClaim, Banana, Banknote,
-  Baseline, Bath, Battery, BatteryCharging, BatteryFull, BatteryLow, Beaker,
-  Bean, Bed, Beef, Beer, BellRing, Bike, Binary, Biohazard, Bitcoin,
-  Blinds, Blocks, Bold, Bomb, Bone, Book, Bot, Box, BoxSelect, Braces,
-  Brackets, Brain, Brush, Bug, Building, Bus, Cake,
-  Candy, Car, Carrot, CaseLower, CaseUpper, Castle, Cat, Check, Cherry,
-  ChevronFirst, ChevronLast, Church, Cigarette, Circle, Clapperboard,
-  ClipboardCopy, ClipboardPaste, Cloud, CloudCog, CloudDrizzle, CloudFog,
-  CloudHail, CloudLightning, CloudMoon, CloudOff, CloudRain, CloudSnow,
-  CloudSun, Clover, Club, Code2, Codepen, Coins, Columns, Contact, Contrast,
-  Cookie, CookingPot, CornerDownLeft, CornerDownRight, CornerLeftDown,
-  CornerLeftUp, CornerRightDown, CornerUpLeft, CornerUpRight, Cpu, CreativeCommons, Crown, CupSoda, Currency, Dices, Diff, Dna, Dog,
-  DollarSign, Donut, DoorClosed, DoorOpen, Draft, Drill, Droplet, Dumbbell,
-  Ear, Egg, Equal, Euro, Expand, Factory, Fan, Fence, FileArchive, FileAudio,
-  FileBadge, FileCheck, FileCode, FileDiff, FileDigit, FileImage, FileInput,
-  FileJson, FileKey, FileLock, FileMinus, FileOutput, FilePieChart,
-  FileQuestion, FileScan, FileSearch, FileSignature, FileSpreadsheet,
-  FileSymlink, FileTerminal, FileType, FileVideo, FileVolume, FileWarning,
-  FileX, Files, Film, Fingerprint, Flag, Flame, Flashlight, FlaskConical,
-  Flower, FolderArchive, FolderCheck, FolderClock, FolderClosed, FolderCog,
-  FolderDot, FolderDown, FolderEdit, FolderGit, FolderGit2, FolderHeart,
-  FolderInput, FolderKey, FolderLock, FolderMinus, FolderOpen, FolderOutput,
-  FolderPlus, FolderRoot, FolderSearch, FolderSettings, FolderSymlink,
-  FolderSync, FolderTree, FolderUp, FolderX, Folders, Footprints, Forklift,
-  FormInput, Forward, Frame, Frown, Fuel, FunctionSquare, Gamepad, Gamepad2,
-  Gauge, Gavel, Gem, Ghost, Gift, GitCommit, GitCompare, GitFork, GitMerge,
-  GitPullRequest, GitPullRequestDraft, Gitlab, Glasses, Grains, Grape,
-  Hammer, Hand, Handshake, HardHat, Heading, HeartCrack, HeartHandshake,
-  HeartPulse, Heater, Hexagon, Highlighter, History, Hotel, Hourglass, IceCream,
-  Import, Indent, IndianRupee, Infinity, Italic, Joystick, Kanban, Lamp, Landmark,
-  Languages, Lasso, Leaf, Library, Lightbulb, Link2, ListEnd, ListFilter,
-  ListMusic, ListOrdered, ListPlus, ListRestart, ListTree, ListVideo, ListX,
-  Loader, Locate, LocateFixed, LockKeyhole, Lollipop, Luggage, Magnet, Mailbox,
-  Mails, Map, Martini, Medal, Megaphone, Milestone, Milk, Minus, Monitor,
-  Mountain, Mouse, Palmtree, PanelBottom, PanelLeft, PanelRight, PanelTop,
-  ParkingCircle, PartyPopper, PawPrint, PersonStanding, PhoneCall, PhoneForwarded,
-  PhoneIncoming, PhoneOff, PhoneOutgoing, PictureInPicture, PictureInPicture2,
-  Pilcrow, Pill, Pizza, Plane, Plug, Popsicle, PoundSterling, Projector,
-  Puzzle, QrCode, Quote, Rabbit, Radar, Radiation, Radio, RadioReceiver,
-  RadioTower, Rat, Receipt, RectangleHorizontal, RectangleVertical, Recycle,
-  Refrigerator, Regex, RemoveFormatting, Replace, Reply, ReplyAll, Rocket,
-  RollerCoaster, Router, Ruler, RussianRuble, Sailboat, Salad, Sandwich,
-  Scale3d, Scaling, Scan, ScanFace, ScanLine, School, Scroll, ScrollText,
-  Send, SeparatorHorizontal, SeparatorVertical, Settings2,Shapes, Share2,
-  Sheet, Shell, Shirt, ShoppingCart, Shovel, ShowerHead, Shrink, Shrub,
-  Signal, Siren, SkipBack, SkipForward, Skull, Sliders, SlidersHorizontal,
-  Smartphone, Snowflake, Socket, Soup, Space, Speaker, Spline, SprayCan,
-  Square, Squirrel, Stamp, StepBack, StepForward, Stethoscope, Sticker,
-  FileCog, ClipboardSignature
-};
+export const iconMap = Object.fromEntries(
+  Object.entries(LucideIcons).filter(([key, value]) => 
+    key !== 'createLucideIcon' && 
+    key !== 'default' &&
+    (typeof value === 'object' || typeof value === 'function') && 
+    key[0] === key[0].toUpperCase()
+  )
+);
 
 export const iconList = Object.keys(iconMap);

@@ -47,7 +47,8 @@
     "react-rnd": "^10.4.11",
     "react-router-dom": "^6.23.1",
     "tailwind-merge": "^1.1.4",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "uuid": "^11.0.3"
   },
   "devDependencies": {
     "@babel/generator": "^7.27.0",

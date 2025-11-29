@@ -21,8 +21,11 @@ const Header = ({ quotationData, onLogoClick, onSearchClick, isBannerVisible, is
     transformOrigin: 'center',
   };
 
+  // 1) Agranda el logo SMQ: Use a larger default size if not specified.
+  // 5) Mejora la proporción visual del header: Adjust container styles
+  const finalLogoSize = logo_size && logo_size > 0 ? logo_size : 250; // Larger default
   const logoContainerStyle = {
-    '--logo-width': `${logo_size || 200}px`
+    '--logo-width': `${finalLogoSize}px`
   };
 
   const marqueeClass = banner_direction === 'right-to-left' ? 'animate-marquee-reverse-once' : 'animate-marquee-once';
@@ -32,7 +35,8 @@ const Header = ({ quotationData, onLogoClick, onSearchClick, isBannerVisible, is
   return (
     <header className="relative bg-black text-white z-30">
       <div className="flex items-center justify-between p-4 border-b border-gray-800 h-20">
-        <div className="flex items-center gap-4">
+        {/* Left section: Logo */}
+        <div className="flex-1 flex items-center gap-4">
           {logo && (
             <button onClick={onLogoClick} className="focus:outline-none focus:ring-2 focus:ring-primary rounded-md">
               <div className="header-logo-container" style={logoContainerStyle}>
@@ -45,11 +49,18 @@ const Header = ({ quotationData, onLogoClick, onSearchClick, isBannerVisible, is
             </button>
           )}
         </div>
-        <div className="hidden md:flex flex-col items-center text-center">
-          <h1 className="text-lg font-bold text-gray-200">{project}</h1>
-          <p className="text-sm text-gray-400">{client}</p>
+
+        {/* Center section: Project Title and Client Name */}
+        {/* 2) Centra el título "PLA 600 AUTO" */}
+        {/* 3) Agranda el tamaño del título */}
+        {/* 4) Alinea correctamente el nombre "JULIO LOPEZ" */}
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-200 leading-tight">{project}</h1>
+          <p className="text-sm sm:text-base text-gray-400 mt-0.5">{client}</p>
         </div>
-        <div className="flex items-center gap-2">
+
+        {/* Right section: Language selector and Search button */}
+        <div className="flex-1 flex items-center justify-end gap-2">
            <LanguageSelector />
           {isAdminView && (
             <Button variant="ghost" size="icon" onClick={onSearchClick} className="text-gray-400 hover:text-white hover:bg-gray-800">
