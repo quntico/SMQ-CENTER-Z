@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 
 function getYouTubeEmbedUrl(input) {
   const url = input.trim();
@@ -79,130 +80,80 @@ export default function VideoSection({ quotationData, onVideoUrlUpdate, isEditor
   };
 
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        padding: "16px",
-        boxSizing: "border-box",
-        backgroundColor: "#111111",
-        color: "#FFFFFF",
-        gap: "16px",
-      }}
-    >
-      {/* Input para la liga de YouTube - Only visible in Editor Mode */}
-      {isEditorMode && (
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Pega aquí la liga de YouTube"
-            style={{
-              flex: 1,
-              padding: "10px 14px",
-              borderRadius: "10px",
-              border: "1px solid #444",
-              backgroundColor: "#000",
-              color: "#fff",
-              fontSize: "16px",
-            }}
-          />
-          <button
-            onClick={handleLoad}
-            style={{
-              padding: "10px 18px",
-              border: "none",
-              borderRadius: "10px",
-              backgroundColor: "#007BFF",
-              color: "#fff",
-              fontWeight: 600,
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Cargar video
-          </button>
-        </div>
-      )}
-
-      {/* Mensaje de error */}
-      {isEditorMode && error && (
-        <div
-          style={{
-            padding: "8px 12px",
-            borderRadius: "8px",
-            backgroundColor: "#661111",
-            color: "#FFDADA",
-            fontSize: "13px",
-          }}
+    <section id="video" className="py-16 sm:py-24 bg-black text-white">
+      <div className="container mx-auto px-4 lg:px-12 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.5 }}
+          transition={{ duration: 0.5 }}
         >
-          {error}
-        </div>
-      )}
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tighter">
+            Maquinaria en <span className="text-blue-500">Acción</span>
+          </h2>
+          <p className="mt-2 sm:mt-4 text-base sm:text-lg text-gray-400 max-w-xl mx-auto">
+            Observa la eficiencia y precisión de nuestra línea de producción.
+          </p>
+        </motion.div>
 
-      {/* Mostrar la URL embed que realmente se está usando (debug visible) */}
-      {isEditorMode && embedUrl && (
-        <div
-          style={{
-            fontSize: "12px",
-            color: "#AAAAAA",
-            wordBreak: "break-all",
-          }}
-        >
-          URL embed en uso: {embedUrl}
-        </div>
-      )}
-
-      {/* Contenedor del iframe */}
-      <div
-        style={{
-          position: "relative",
-          paddingBottom: "56.25%",
-          height: 0,
-          width: "100%",
-          borderRadius: "12px",
-          overflow: "hidden",
-          backgroundColor: "#000",
-          boxShadow: "0 0 24px rgba(0,0,0,0.7)",
-          marginTop: "8px",
-        }}
-      >
-        {embedUrl ? (
-          <iframe
-            src={embedUrl}
-            title="Video de presentación"
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              border: "none",
-            }}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-          />
-        ) : (
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#808080",
-              fontSize: "14px",
-              padding: "12px",
-              textAlign: "center",
-            }}
+        {/* Editor Controls */}
+        {isEditorMode && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-8 max-w-2xl mx-auto bg-gray-900 p-4 rounded-xl border border-gray-800"
           >
-            {isEditorMode ? 'Pega una liga de YouTube y haz clic en "Cargar video" para mostrar el visor.' : 'No hay video disponible.'}
-          </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Pega aquí la liga de YouTube"
+                className="flex-1 bg-black border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-blue-500 outline-none"
+              />
+              <button
+                onClick={handleLoad}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors"
+              >
+                Cargar
+              </button>
+            </div>
+            {error && (
+              <p className="mt-2 text-red-400 text-sm text-left">{error}</p>
+            )}
+            {embedUrl && (
+              <p className="mt-2 text-gray-500 text-xs text-left break-all">
+                URL embed: {embedUrl}
+              </p>
+            )}
+          </motion.div>
         )}
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true, amount: 0.5 }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+          className="mt-8 sm:mt-12 aspect-video max-w-4xl mx-auto bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden shadow-2xl shadow-blue-900/10"
+        >
+          {embedUrl ? (
+            <iframe
+              className="w-full h-full"
+              src={embedUrl}
+              title="Video de presentación"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            ></iframe>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-500">
+              {isEditorMode
+                ? 'Pega una liga de YouTube arriba y haz clic en "Cargar"'
+                : 'No hay video disponible'}
+            </div>
+          )}
+        </motion.div>
       </div>
-    </div>
+    </section>
   );
 }
