@@ -146,7 +146,8 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
     const initialThemes = isAdminView ? allThemes : { [initialQuotationData.theme_key]: processedData };
     setThemes(initialThemes);
     setActiveTheme(initialQuotationData.theme_key);
-  }, [initialQuotationData, allThemes, isAdminView]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuotationData.theme_key, isAdminView]);
 
   const handleAdminLogout = () => {
     setIsAdminAuthenticated(false);
