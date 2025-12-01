@@ -138,36 +138,62 @@ const VideoSection = ({ sectionData, quotationData, isEditorMode, onVideoUrlUpda
         <div className="relative w-full aspect-video bg-[#050505] rounded-3xl overflow-hidden border border-gray-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] group">
           {currentVideoUrl ? (
             <>
-              <ReactPlayer
-                key={currentVideoUrl} // Force re-mount on URL change
-                url={currentVideoUrl}
-                width="100%"
-                height="100%"
-                controls={true}
-                playing={false}
-                playsinline={true}
-                onError={(e) => {
-                  console.error("Player Error:", e);
-                  setPlayerError(true);
-                }}
-                config={{
-                  youtube: {
-                    playerVars: { showinfo: 0, modestbranding: 1, rel: 0 }
-                  },
-                  file: {
-                    attributes: {
-                      controlsList: 'nodownload',
-                      playsInline: true
+              {(currentVideoUrl.includes('youtube.com') || currentVideoUrl.includes('youtu.be') || currentVideoUrl.includes('vimeo.com')) ? (
+                <ReactPlayer
+                  key={currentVideoUrl}
+                  url={currentVideoUrl}
+                  width="100%"
+                  height="100%"
+                  controls={true}
+                  playing={false}
+                  playsinline={true}
+                  onError={(e) => {
+                    console.error("ReactPlayer Error:", e);
+                    setPlayerError(true);
+                  }}
+                  config={{
+                    youtube: {
+                      playerVars: { showinfo: 0, modestbranding: 1, rel: 0 }
                     }
-                  }
-                }}
-              />
+                  }}
+                />
+              ) : (
+                <video
+                  key={currentVideoUrl}
+                  src={currentVideoUrl}
+                  className="w-full h-full object-contain bg-black"
+                  controls
+                  playsInline
+                  preload="metadata"
+                  onError={(e) => {
+                    console.error("Native Video Error:", e);
+                    setPlayerError(true);
+                  }}
+                >
+                  Tu navegador no soporta la reproducción de este video.
+                </video>
+              )}
+
               {playerError && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 z-10">
                   <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
                   <p className="text-xl font-bold text-white">Error al reproducir el video</p>
                   <p className="text-gray-400 mt-2">La URL no es válida o el archivo no es accesible.</p>
-                  {isEditorMode && <p className="text-sm text-blue-400 mt-4 font-mono bg-blue-900/20 px-4 py-2 rounded">{currentVideoUrl}</p>}
+                  {isEditorMode && (
+                    <div className="mt-4 flex flex-col items-center gap-2">
+                      <p className="text-sm text-blue-400 font-mono bg-blue-900/20 px-4 py-2 rounded break-all max-w-md text-center">
+                        {currentVideoUrl}
+                      </p>
+                      <a
+                        href={currentVideoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs bg-white text-black px-3 py-1 rounded hover:bg-gray-200 transition-colors"
+                      >
+                        Abrir enlace directo
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
             </>
