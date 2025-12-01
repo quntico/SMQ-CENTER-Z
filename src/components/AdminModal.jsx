@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Eraser, Settings, Palette, Scale, Upload, Image, Loader2, Minimize, Timer, PlaySquare, Clock, CheckCircle, Wrench, Ship, Truck, Copy, Link as LinkIcon, ClipboardCopy, Star, Home, MonitorSpeaker as Announce, MoveHorizontal, EyeOff } from 'lucide-react';
+import { X, Save, Eraser, Settings, Palette, Scale, Upload, Image, Loader2, Minimize, Timer, PlaySquare, Clock, CheckCircle, Wrench, Ship, Truck, Copy, Link as LinkIcon, ClipboardCopy, Star, Home, MonitorSpeaker as Announce, MoveHorizontal, EyeOff, ExternalLink, QrCode } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -17,12 +17,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLanguage } from '@/contexts/LanguageContext';
+import { QRCodeCanvas } from 'qrcode.react';
 
 const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActiveTheme, onCloneClick, onPreviewUpdate }) => {
   const [currentThemeData, setCurrentThemeData] = useState(themes[activeTheme]);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isUploadingFavicon, setIsUploadingFavicon] = useState(false);
+  const [showQR, setShowQR] = useState(false);
   const logoFileInputRef = useRef(null);
   const faviconFileInputRef = useRef(null);
   const { toast } = useToast();
@@ -278,6 +280,12 @@ const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActive
     });
   };
 
+  const handleOpenLink = () => {
+    if (!currentThemeData.slug) return;
+    const link = `${window.location.origin}/cotizacion/${currentThemeData.slug}`;
+    window.open(link, '_blank');
+  };
+
   if (!isOpen) return null;
 
   const isEditingTemplate = themes[activeTheme]?.is_template;
@@ -360,6 +368,8 @@ const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActive
               <div className="flex flex-wrap gap-3">
                 <Button variant="outline" onClick={onCloneClick} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10"><Copy className="h-4 w-4 mr-2" />{t('adminModal.clone')}</Button>
                 <Button variant="outline" onClick={handleCopyLink} disabled={isEditingTemplate} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10"><ClipboardCopy className="h-4 w-4 mr-2" />{t('adminModal.copyLink')}</Button>
+                <Button variant="outline" onClick={() => setShowQR(true)} disabled={isEditingTemplate} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10"><QrCode className="h-4 w-4 mr-2" />QR</Button>
+                <Button variant="outline" onClick={handleOpenLink} disabled={isEditingTemplate} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10"><ExternalLink className="h-4 w-4 mr-2" />Abrir</Button>
                 {!isEditingTemplate && (
                   <Button variant="secondary" onClick={handleSetAsTemplate} className="bg-[#2563eb]/10 text-[#2563eb] hover:bg-[#2563eb]/20 border border-[#2563eb]/20"><Star className="h-4 w-4 mr-2" />{t('adminModal.setAsTemplate')}</Button>
                 )}
@@ -377,6 +387,18 @@ const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActive
             </div>
           </motion.div>
         </motion.div>
+      )}
+      {showQR && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4" onClick={() => setShowQR(false)}>
+          <div className="bg-white p-8 rounded-xl flex flex-col items-center gap-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-2xl font-bold text-black">Código QR</h3>
+            <div className="p-4 bg-white rounded-lg shadow-inner border border-gray-200">
+              <QRCodeCanvas value={`${window.location.origin}/cotizacion/${currentThemeData.slug}`} size={256} level="H" includeMargin={true} />
+            </div>
+            <p className="text-sm text-gray-600 font-medium">{currentThemeData.project}</p>
+            <Button onClick={() => setShowQR(false)} className="w-full">Cerrar</Button>
+          </div>
+        </div>
       )}
     </AnimatePresence>
   );
