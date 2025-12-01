@@ -1,200 +1,349 @@
-import React, { useState, useEffect } from 'react';
-import { Video, Link as LinkIcon, Save } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Upload, Link as LinkIcon, Save, Video as VideoIcon, Trash2, ExternalLink, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/customSupabaseClient';
+import { getActiveBucket } from '@/lib/bucketResolver';
 
-const VideoSection = ({ sectionData, quotationData, isEditorMode, onVideoUrlUpdate, onContentChange }) => {
+export default function VideoSection({ sectionData, quotationData, isEditorMode, onVideoUrlUpdate, onContentChange }) {
   const { toast } = useToast();
 
-  // Prioritize quotationData.video_url, but keep fallbacks.
-  const currentVideoUrl = quotationData?.video_url || sectionData.video_url || sectionData.content?.video_url || '';
-  const title = sectionData.content?.title || "VIDEO EXPERIENCE";
-  const subtitle = sectionData.content?.subtitle || "Visualiza el funcionamiento y los detalles técnicos en alta definición.";
+  // Load initial state from props
+  const initialTitle = sectionData.content?.title || "VIDEO DE LA MÁQUINA";
+  const initialSubtitle = sectionData.content?.subtitle || "Visualiza el funcionamiento y los detalles técnicos en alta definición.";
+  const initialUrl = quotationData?.video_url || sectionData.video_url || sectionData.content?.video_url || "";
 
-  const [urlInput, setUrlInput] = useState('');
-  const [titleInput, setTitleInput] = useState(title);
-  const [subtitleInput, setSubtitleInput] = useState(subtitle);
+  const [title, setTitle] = useState(initialTitle);
+  const [subtitle, setSubtitle] = useState(initialSubtitle);
+  const [videoUrl, setVideoUrl] = useState(initialUrl);
+  const [storedUrl, setStoredUrl] = useState(initialUrl);
+  const [error, setError] = useState("");
+  const [savingTexts, setSavingTexts] = useState(false);
+  const [savingVideo, setSavingVideo] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
-  // Initialize inputs
+  // Sync with props if they change externally
   useEffect(() => {
-    if (currentVideoUrl) {
-      setUrlInput(currentVideoUrl);
+    if (initialUrl) {
+      setVideoUrl(initialUrl);
+      setStoredUrl(initialUrl);
     }
-  }, [currentVideoUrl]);
+  }, [initialUrl]);
 
   useEffect(() => {
-    setTitleInput(title);
-    setSubtitleInput(subtitle);
-  }, [title, subtitle]);
+    setTitle(initialTitle);
+    setSubtitle(initialSubtitle);
+  }, [initialTitle, initialSubtitle]);
 
-  const handleContentSave = () => {
+  const handleUpdateTexts = () => {
+    setSavingTexts(true);
+    setError("");
+
     if (onContentChange) {
       onContentChange({
-        title: titleInput,
-        subtitle: subtitleInput
+        title,
+        subtitle
       });
-      toast({ title: "Contenido actualizado", description: "El título y subtítulo se han guardado." });
+      toast({ title: "Textos actualizados", description: "El título y subtítulo se han guardado." });
     }
+
+    setTimeout(() => {
+      setSavingTexts(false);
+    }, 400);
   };
 
-  const handleUrlSave = () => {
-    let urlToSave = urlInput.trim();
-    if (!urlToSave) return;
+  const handleVideoUrlChange = (e) => {
+    setVideoUrl(e.target.value);
+    setError("");
+  };
+
+  const handleSaveVideo = () => {
+    if (!videoUrl.trim()) {
+      setError("Ingresa una URL de video o selecciona un archivo MP4.");
+      return;
+    }
+    setSavingVideo(true);
 
     if (onVideoUrlUpdate) {
-      onVideoUrlUpdate(urlToSave);
-      toast({
-        title: "URL Actualizada",
-        description: "El video se ha vinculado correctamente.",
-      });
+      onVideoUrlUpdate(videoUrl.trim());
+      setStoredUrl(videoUrl.trim());
+      toast({ title: "Video actualizado", description: "La URL del video se ha guardado." });
+    }
+
+    setTimeout(() => setSavingVideo(false), 400);
+  };
+
+  const handleChooseFile = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
     }
   };
 
-  const getEmbedUrl = (url) => {
-    if (!url) return '';
-    try {
-      // Already an embed link
-      if (url.includes('youtube.com/embed/')) return url;
+  const handleFileChange = async (e) => {
+    setError("");
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-      let videoId = '';
-      // Standard watch URL
-      if (url.includes('watch?v=')) {
-        videoId = url.split('watch?v=')[1].split('&')[0];
-      }
-      // Shortened URL
-      else if (url.includes('youtu.be/')) {
-        videoId = url.split('youtu.be/')[1].split('?')[0];
-      }
-
-      if (videoId) {
-        return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
-      }
-    } catch (e) {
-      console.error("Error parsing video URL", e);
+    const validTypes = ["video/mp4", "video/webm", "video/ogg"];
+    if (!validTypes.includes(file.type)) {
+      setError("Formato no soportado. Usa MP4, WebM u OGG.");
+      return;
     }
-    // Return original if no known pattern matched (might be valid iframe src already)
-    return url;
+
+    setIsUploading(true);
+    try {
+      // Force 'public' bucket for videos to ensure public access
+      let bucketName = 'public';
+      const { error: checkError } = await supabase.storage.from(bucketName).list('', { limit: 1 });
+      if (checkError) {
+        console.warn("Public bucket not found, falling back to resolver");
+        bucketName = await getActiveBucket();
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `videos/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage.from(bucketName).upload(fileName, file);
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from(bucketName).getPublicUrl(fileName);
+
+      setVideoUrl(publicUrl);
+      setStoredUrl(publicUrl);
+
+      if (onVideoUrlUpdate) {
+        onVideoUrlUpdate(publicUrl);
+        toast({ title: "Video subido", description: "El archivo se ha cargado correctamente." });
+      }
+
+    } catch (err) {
+      console.error("Error uploading file:", err);
+      setError("Error al subir el archivo. Intenta de nuevo.");
+      toast({ title: "Error", description: "No se pudo subir el video.", variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleTestOriginal = () => {
+    if (!storedUrl) return;
+    window.open(storedUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const handleDeleteVideo = () => {
+    if (onVideoUrlUpdate) {
+      onVideoUrlUpdate("");
+      setVideoUrl("");
+      setStoredUrl("");
+      setError("");
+      toast({ title: "Video eliminado", description: "Se ha quitado el video." });
+    }
+  };
+
+  // --- render del player (Adapted from user code) ---
+  const renderPlayer = () => {
+    if (!storedUrl) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full text-gray-500 bg-gray-900/50 rounded-xl border border-gray-800 p-10">
+          <span className="text-4xl mb-4">🎬</span>
+          <p className="text-lg font-medium">No hay video configurado aún.</p>
+          {isEditorMode && (
+            <p className="text-sm mt-2 text-gray-400">
+              En modo editor, usa el panel de “Gestión de Video” para agregar uno.
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    const lower = storedUrl.toLowerCase();
+    const isYouTube = /youtube\.com|youtu\.be/.test(lower);
+
+    if (isYouTube) {
+      let embedUrl = storedUrl;
+      if (storedUrl.includes("watch?v=")) {
+        embedUrl = storedUrl.replace("watch?v=", "embed/");
+        // Remove any extra query params after video ID if needed, but simple replace is usually enough for basic links
+        if (embedUrl.includes("&")) {
+          const parts = embedUrl.split("&");
+          embedUrl = parts[0];
+        }
+      } else if (storedUrl.includes("youtu.be/")) {
+        embedUrl = storedUrl.replace("youtu.be/", "www.youtube.com/embed/");
+      }
+
+      return (
+        <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800">
+          <iframe
+            className="w-full h-full"
+            src={embedUrl}
+            title="Video de la máquina"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800">
+        <video className="w-full h-full object-contain" controls preload="metadata">
+          <source src={storedUrl} />
+          Tu navegador no soporta la reproducción de video.
+        </video>
+      </div>
+    );
   };
 
   return (
-    <div className="w-full min-h-[70vh] bg-black text-white p-6 sm:p-12 flex flex-col items-center justify-center font-sans">
-      <div className="max-w-6xl w-full space-y-10">
-
-        <div className="text-center space-y-4 animate-in fade-in slide-in-from-top-4 duration-700">
+    <section className="w-full min-h-[70vh] bg-black text-white p-6 sm:p-12 font-sans">
+      {/* Encabezado visible en modo cliente y editor */}
+      <header className="text-center space-y-4 mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
+        <div>
           <h2 className="text-4xl sm:text-6xl font-black tracking-tighter uppercase bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">
             {title}
           </h2>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto font-light">
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto font-light mt-4">
             {subtitle}
           </p>
         </div>
+      </header>
 
-        {/* Simple Iframe Player Container */}
-        <div className="relative w-full aspect-video bg-[#050505] rounded-3xl overflow-hidden border border-gray-800 shadow-[0_0_50px_rgba(0,0,0,0.5)] group">
-          {currentVideoUrl ? (
-            <iframe
-              src={getEmbedUrl(currentVideoUrl)}
-              title="Video Player"
-              className="w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-600 bg-[#0a0a0a] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-900 to-black">
-              <div className="p-6 rounded-full bg-gray-900/50 border border-gray-800 mb-6">
-                <Video className="w-12 h-12 opacity-40" />
-              </div>
-              <p className="text-xl font-medium tracking-wide">Esperando contenido multimedia</p>
-              {isEditorMode && <p className="text-sm opacity-60 mt-2 animate-pulse">Configura el video en el panel de administración</p>}
-            </div>
-          )}
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className={`lg:col-span-${isEditorMode ? '2' : '3'}`}>
+          {renderPlayer()}
         </div>
 
-        {/* Admin Controls */}
+        {/* Panel de edición: aparece solo en modo editor */}
         {isEditorMode && (
-          <div className="bg-[#0a0a0a] border border-gray-800 rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-500">
-            <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-800">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/10 rounded-lg">
-                  <Video className="w-6 h-6 text-blue-500" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-xl text-white">Gestión de Video</h3>
-                  <p className="text-xs text-gray-500">Configura la fuente del video y los textos</p>
-                </div>
+          <aside className="bg-[#0a0a0a] border border-gray-800 rounded-2xl p-6 shadow-2xl h-fit">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-800">
+              <div className="text-2xl">🎥</div>
+              <div>
+                <h3 className="font-bold text-xl text-white">Gestión de Video</h3>
+                <p className="text-xs text-gray-500">
+                  Configura la fuente del video y los textos.
+                </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-              {/* Text Configuration */}
-              <div className="space-y-5">
-                <Label className="text-gray-300 flex items-center gap-2 text-sm font-medium uppercase tracking-wider">
-                  <span className="text-blue-500">T</span> Títulos de la Sección
-                </Label>
+            <div className="space-y-8">
+              {/* Títulos de la sección */}
+              <div className="space-y-4">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">TÍTULOS DE LA SECCIÓN</p>
                 <div className="space-y-3">
-                  <Input
-                    placeholder="Título Principal"
-                    value={titleInput}
-                    onChange={(e) => setTitleInput(e.target.value)}
-                    className="bg-black border-gray-700 focus:border-blue-500"
-                  />
-                  <Input
-                    placeholder="Subtítulo / Descripción"
-                    value={subtitleInput}
-                    onChange={(e) => setSubtitleInput(e.target.value)}
-                    className="bg-black border-gray-700 focus:border-blue-500"
-                  />
-                  <Button onClick={handleContentSave} className="w-full bg-gray-800 hover:bg-gray-700 border border-gray-700">
-                    <Save className="w-4 h-4 mr-2" /> Actualizar Textos
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">Título principal</Label>
+                    <Input
+                      type="text"
+                      className="bg-black border-gray-700 focus:border-blue-500"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">Subtítulo / descripción</Label>
+                    <Input
+                      type="text"
+                      className="bg-black border-gray-700 focus:border-blue-500"
+                      value={subtitle}
+                      onChange={(e) => setSubtitle(e.target.value)}
+                    />
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full border-gray-700 hover:bg-gray-800 hover:text-white"
+                    onClick={handleUpdateTexts}
+                    disabled={savingTexts}
+                  >
+                    {savingTexts ? "Guardando..." : "Actualizar Textos"}
                   </Button>
                 </div>
               </div>
 
-              {/* Video Configuration */}
-              <div className="space-y-5 border-l border-gray-800 lg:pl-10">
-                <Label className="text-gray-300 flex items-center gap-2 text-sm font-medium uppercase tracking-wider">
-                  <LinkIcon className="w-4 h-4 text-red-500" /> Fuente del Video (YouTube)
-                </Label>
+              {/* Fuente del video */}
+              <div className="space-y-4 pt-4 border-t border-gray-800">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">FUENTE DEL VIDEO</p>
 
-                <div className="space-y-4">
-                  <div className="flex gap-3">
+                <div className="space-y-3">
+                  <Label className="text-xs text-gray-500">URL del video (YouTube o MP4)</Label>
+                  <div className="flex gap-2">
                     <Input
-                      placeholder="https://youtube.com/watch?v=..."
-                      value={urlInput}
-                      onChange={(e) => setUrlInput(e.target.value)}
+                      type="text"
                       className="bg-black border-gray-700 focus:border-blue-500"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      value={videoUrl}
+                      onChange={handleVideoUrlChange}
                     />
-                    <Button onClick={handleUrlSave} className="bg-blue-600 hover:bg-blue-700">
+                    <Button
+                      type="button"
+                      className="bg-blue-600 hover:bg-blue-700 px-3"
+                      onClick={handleSaveVideo}
+                      title="Guardar URL de video"
+                    >
                       <Save className="w-4 h-4" />
                     </Button>
                   </div>
-                  <p className="text-xs text-gray-500">
-                    Ingresa una URL de YouTube. El sistema generará el código de inserción automáticamente.
-                  </p>
+                </div>
 
-                  {/* Debug / Warning Info */}
-                  {currentVideoUrl && !currentVideoUrl.includes('youtube') && !currentVideoUrl.includes('youtu.be') && !currentVideoUrl.includes('vimeo') && (
-                    <div className="mt-4 p-3 bg-yellow-900/30 border border-yellow-700/50 rounded-lg text-yellow-200 text-xs">
-                      <p className="font-bold mb-1">⚠️ URL no compatible con este reproductor</p>
-                      <p>La URL actual parece ser un archivo o un enlace no reconocido. La versión original solo soporta YouTube/Vimeo.</p>
-                      <p className="mt-2 font-mono bg-black/50 p-1 rounded break-all">{currentVideoUrl}</p>
-                    </div>
-                  )}
-                  {currentVideoUrl && (currentVideoUrl.includes('youtube') || currentVideoUrl.includes('youtu.be')) && (
-                    <div className="mt-2 text-xs text-green-500 flex items-center gap-1">
-                      <LinkIcon className="w-3 h-3" /> URL de YouTube detectada
-                    </div>
-                  )}
+                <div className="pt-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full bg-gray-800 hover:bg-gray-700 text-white"
+                    onClick={handleChooseFile}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Subiendo...</>
+                    ) : (
+                      <>⬆ Subir MP4</>
+                    )}
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="video/mp4,video/webm,video/ogg"
+                    style={{ display: "none" }}
+                    onChange={handleFileChange}
+                  />
+                </div>
+
+                {error && <div className="text-red-500 text-xs bg-red-900/20 p-2 rounded border border-red-900/50">{error}</div>}
+
+                <div className="flex flex-col gap-2 pt-4 border-t border-gray-800">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-xs text-blue-500 hover:text-blue-400 justify-start px-0"
+                    onClick={handleTestOriginal}
+                    disabled={!storedUrl}
+                  >
+                    <ExternalLink className="w-3 h-3 mr-2" /> Probar enlace original
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-xs text-red-500 hover:text-red-400 hover:bg-red-950/20 justify-start px-0"
+                    onClick={handleDeleteVideo}
+                  >
+                    <Trash2 className="w-3 h-3 mr-2" /> Eliminar Video
+                  </Button>
                 </div>
               </div>
             </div>
-          </div>
+          </aside>
         )}
       </div>
-    </div>
+    </section>
   );
-};
-
-export default VideoSection;
+}
