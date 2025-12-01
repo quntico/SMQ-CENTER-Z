@@ -94,12 +94,20 @@ const mergeWithDefaults = (config, themeKey) => {
   let mergedConfig = config
     .filter(s => s.id !== 'propuesta_dinamica') // Explicitly filter out prop_dinamica from DB configs
     .map(s => {
+      let merged;
       if (!defaultConfigMap.has(s.id)) {
         const baseComponentId = s.component || s.id.split('_copy')[0];
         const baseConfig = defaultConfigMap.get(baseComponentId) || {};
-        return { ...baseConfig, ...s, component: baseComponentId };
+        merged = { ...baseConfig, ...s, component: baseComponentId };
+      } else {
+        merged = { ...defaultConfigMap.get(s.id), ...s };
       }
-      return { ...defaultConfigMap.get(s.id), ...s };
+
+      // FORCE UNLOCK for specific sections to ensure they are editable regardless of DB state
+      if (['ia', 'layout', 'video', 'calculadora_prod'].includes(merged.id)) {
+        merged.isLocked = false;
+      }
+      return merged;
     });
   const existingIds = new Set(mergedConfig.map(s => s.id));
   defaultSections.forEach(ds => {
@@ -199,11 +207,14 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
   }, []);
 
   const setSectionsConfig = async (newConfig) => {
+    // Sanitize config to remove Component and other derived props before saving
+    const sanitizedConfig = newConfig.map(({ Component, ...rest }) => rest);
+
     setThemes(prevThemes => ({
       ...prevThemes,
-      [activeTheme]: { ...prevThemes[activeTheme], sections_config: newConfig },
+      [activeTheme]: { ...prevThemes[activeTheme], sections_config: sanitizedConfig },
     }));
-    await supabase.from('quotations').update({ sections_config: newConfig }).eq('theme_key', activeTheme);
+    await supabase.from('quotations').update({ sections_config: sanitizedConfig }).eq('theme_key', activeTheme);
   };
 
   if (!displayData) return null;
