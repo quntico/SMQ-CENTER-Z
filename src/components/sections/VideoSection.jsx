@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, Link as LinkIcon, Save, Video as VideoIcon, Trash2, ExternalLink, AlertCircle, Loader2, AlertTriangle } from 'lucide-react';
+import { Upload, Link as LinkIcon, Save, Video as VideoIcon, Trash2, ExternalLink, AlertCircle, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,18 +17,21 @@ export default function VideoSection({ sectionData, quotationData, isEditorMode,
 
   const [title, setTitle] = useState(initialTitle);
   const [subtitle, setSubtitle] = useState(initialSubtitle);
+
+  // videoUrl is the "Draft" state (what is in the input/preview)
   const [videoUrl, setVideoUrl] = useState(initialUrl);
+  // storedUrl is the "Saved" state (what is in the DB)
   const [storedUrl, setStoredUrl] = useState(initialUrl);
+
   const [error, setError] = useState("");
   const [savingTexts, setSavingTexts] = useState(false);
   const [savingVideo, setSavingVideo] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef(null);
 
-  // Sync with props if they change externally
+  // Sync with props if they change externally AND we haven't touched the local state yet
   useEffect(() => {
-    if (initialUrl) {
+    if (initialUrl && initialUrl !== storedUrl) {
       setVideoUrl(initialUrl);
       setStoredUrl(initialUrl);
     }
@@ -108,7 +111,6 @@ export default function VideoSection({ sectionData, quotationData, isEditorMode,
     }
 
     setIsUploading(true);
-    setUploadProgress(0); // Reset progress
 
     // Warn for large files
     if (file.size > 50 * 1024 * 1024) {
@@ -120,13 +122,9 @@ export default function VideoSection({ sectionData, quotationData, isEditorMode,
     }
 
     try {
-      // Force 'public' bucket for videos to ensure public access
-      let bucketName = 'public';
-      const { error: checkError } = await supabase.storage.from(bucketName).list('', { limit: 1 });
-      if (checkError) {
-        console.warn("Public bucket not found, falling back to resolver");
-        bucketName = await getActiveBucket();
-      }
+      // Use the robust bucket resolver
+      const bucketName = await getActiveBucket();
+      console.log("Uploading video to bucket:", bucketName);
 
       const fileExt = file.name.split('.').pop();
       const fileName = `videos/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -142,17 +140,17 @@ export default function VideoSection({ sectionData, quotationData, isEditorMode,
       const { data: { publicUrl } } = supabase.storage.from(bucketName).getPublicUrl(fileName);
 
       setVideoUrl(publicUrl);
-      setStoredUrl(publicUrl);
-
+      // Automatically save after upload for convenience
       if (onVideoUrlUpdate) {
         onVideoUrlUpdate(publicUrl);
-        toast({ title: "Video subido", description: "El archivo se ha cargado correctamente." });
+        setStoredUrl(publicUrl);
+        toast({ title: "Video subido", description: "El archivo se ha cargado y guardado correctamente." });
       }
 
     } catch (err) {
       console.error("Error uploading file:", err);
-      setError("Error al subir el archivo. Verifica tu conexión o intenta con un archivo más pequeño.");
-      toast({ title: "Error", description: "No se pudo subir el video.", variant: "destructive" });
+      setError(`Error al subir: ${err.message || "Verifica tu conexión"}`);
+      toast({ title: "Error de subida", description: err.message || "No se pudo subir el video.", variant: "destructive" });
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -160,8 +158,8 @@ export default function VideoSection({ sectionData, quotationData, isEditorMode,
   };
 
   const handleTestOriginal = () => {
-    if (!storedUrl) return;
-    window.open(storedUrl, "_blank", "noopener,noreferrer");
+    if (!videoUrl) return;
+    window.open(videoUrl, "_blank", "noopener,noreferrer");
   };
 
   const handleDeleteVideo = () => {
@@ -177,9 +175,12 @@ export default function VideoSection({ sectionData, quotationData, isEditorMode,
   // Check if there are unsaved changes in the URL input
   const hasUnsavedUrl = videoUrl !== storedUrl && videoUrl.trim() !== "";
 
-  // --- render del player (Adapted from user code) ---
+  // --- render del player (Uses videoUrl for instant preview) ---
   const renderPlayer = () => {
-    if (!storedUrl) {
+    // Use videoUrl (local state) instead of storedUrl for instant feedback
+    const urlToRender = videoUrl;
+
+    if (!urlToRender) {
       return (
         <div className="flex flex-col items-center justify-center h-full text-gray-500 bg-gray-900/50 rounded-xl border border-gray-800 p-10">
           <span className="text-4xl mb-4">🎬</span>
@@ -193,20 +194,20 @@ export default function VideoSection({ sectionData, quotationData, isEditorMode,
       );
     }
 
-    const lower = storedUrl.toLowerCase();
+    const lower = urlToRender.toLowerCase();
     const isYouTube = /youtube\.com|youtu\.be/.test(lower);
 
     if (isYouTube) {
-      let embedUrl = storedUrl;
-      if (storedUrl.includes("watch?v=")) {
-        embedUrl = storedUrl.replace("watch?v=", "embed/");
+      let embedUrl = urlToRender;
+      if (urlToRender.includes("watch?v=")) {
+        embedUrl = urlToRender.replace("watch?v=", "embed/");
         // Remove any extra query params after video ID if needed, but simple replace is usually enough for basic links
         if (embedUrl.includes("&")) {
           const parts = embedUrl.split("&");
           embedUrl = parts[0];
         }
-      } else if (storedUrl.includes("youtu.be/")) {
-        embedUrl = storedUrl.replace("youtu.be/", "www.youtube.com/embed/");
+      } else if (urlToRender.includes("youtu.be/")) {
+        embedUrl = urlToRender.replace("youtu.be/", "www.youtube.com/embed/");
       }
 
       return (
@@ -225,8 +226,7 @@ export default function VideoSection({ sectionData, quotationData, isEditorMode,
 
     return (
       <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800">
-        <video className="w-full h-full object-contain" controls preload="metadata">
-          <source src={storedUrl} />
+        <video className="w-full h-full object-contain" controls preload="metadata" src={urlToRender}>
           Tu navegador no soporta la reproducción de video.
         </video>
       </div>
@@ -364,7 +364,7 @@ export default function VideoSection({ sectionData, quotationData, isEditorMode,
                     variant="ghost"
                     className="text-xs text-blue-500 hover:text-blue-400 justify-start px-0"
                     onClick={handleTestOriginal}
-                    disabled={!storedUrl}
+                    disabled={!videoUrl}
                   >
                     <ExternalLink className="w-3 h-3 mr-2" /> Probar enlace original
                   </Button>

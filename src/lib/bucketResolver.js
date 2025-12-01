@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/customSupabaseClient';
 
 const PREFERRED_BUCKET = "quotation-files";
-const FALLBACK_BUCKETS = ["quotation-pdfs", "public", "logos-bucket", "logos", "images", "avatars", "storage"];
+const FALLBACK_BUCKETS = ["quotation-files", "layout-images", "quotation-pdfs", "public", "logos-bucket", "logos", "images", "avatars", "storage"];
 
 let resolvedBucket = null;
 
