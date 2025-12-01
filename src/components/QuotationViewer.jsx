@@ -83,7 +83,7 @@ const defaultSections = [
   { id: 'portada', label: 'Home', icon: 'Home', isVisible: false, component: 'portada' },
   { id: 'generales', label: 'Generales', icon: 'ClipboardList', isVisible: false, component: 'generales' },
   { id: 'exclusiones', label: 'Exclusiones', icon: 'XCircle', isVisible: false, component: 'exclusiones' },
-  { id: 'ia', label: 'Asistente IA', icon: 'BrainCircuit', isVisible: false, isLocked: false, component: 'ia' },
+  { id: 'ia', label: 'Asistente IA', icon: 'BrainCircuit', isVisible: true, isLocked: false, component: 'ia' },
 ];
 
 const clientVisibleSections = new Set(defaultSections.filter(s => !s.adminOnly).map(s => s.id));

@@ -127,7 +127,7 @@ const Sidebar = ({
               </button>
             </div>
 
-            <nav className="mt-4 pb-20">
+            <nav className="mt-4 pb-80">
               <Droppable droppableId="sections">
                 {(provided) => (
                   <div {...provided.droppableProps} ref={provided.innerRef}>
