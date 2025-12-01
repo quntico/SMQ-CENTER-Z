@@ -77,6 +77,10 @@ const SidebarItem = ({
   const Icon = section.icon && iconMap[section.icon] ? iconMap[section.icon] : iconMap['FileText'];
   const isVisible = section.isVisible !== false;
 
+  // FORCE UNLOCK: Always allow editing these sections regardless of DB config
+  const forceUnlockedIds = ['ia', 'layout', 'video', 'calculadora_prod'];
+  const isLocked = section.isLocked && !forceUnlockedIds.includes(section.id);
+
   const handleSaveLabel = () => {
     if (tempLabel.trim() !== "" && tempLabel !== displayLabel) {
       onLabelChange(tempLabel);
@@ -118,14 +122,14 @@ const SidebarItem = ({
       <IconPicker
         value={section.icon}
         onChange={onIconChange}
-        isEditorMode={isEditorMode && !section.isLocked}
+        isEditorMode={isEditorMode && !isLocked}
         trigger={
           <div
             className={cn(
               "flex-shrink-0 transition-transform duration-200 p-1 rounded-md",
-              isEditorMode && !section.isLocked ? "hover:bg-white/10 cursor-pointer" : ""
+              isEditorMode && !isLocked ? "hover:bg-white/10 cursor-pointer" : ""
             )}
-            onClick={(e) => isEditorMode && !section.isLocked && e.stopPropagation()}
+            onClick={(e) => isEditorMode && !isLocked && e.stopPropagation()}
           >
             <Icon className={cn(
               "w-5 h-5 led-blue-hover",
@@ -153,10 +157,10 @@ const SidebarItem = ({
               className={cn(
                 "block truncate text-sm transition-all duration-200 select-none led-blue-hover",
                 isActive ? "font-semibold led-blue-text" : "text-gray-300",
-                isEditorMode && !section.isLocked && "hover:text-blue-400 cursor-text"
+                isEditorMode && !isLocked && "hover:text-blue-400 cursor-text"
               )}
               onDoubleClick={(e) => {
-                if (isEditorMode && !section.isLocked) {
+                if (isEditorMode && !isLocked) {
                   e.preventDefault();
                   e.stopPropagation();
                   setIsEditingLabel(true);
@@ -183,7 +187,7 @@ const SidebarItem = ({
         <div className="ml-auto flex items-center gap-1 opacity-100 transition-opacity bg-black/90 backdrop-blur-sm rounded-l-md pl-1 shadow-xl border-l border-gray-800/50 absolute right-0 h-full pr-1">
 
           {/* Rename Button (Direct Access) */}
-          {!section.isLocked && (
+          {!isLocked && (
             <button
               onClick={(e) => { e.stopPropagation(); setIsEditingLabel(true); }}
               className="p-1.5 hover:text-blue-400 text-gray-400 transition-colors rounded-md hover:bg-white/5"
@@ -194,7 +198,7 @@ const SidebarItem = ({
           )}
 
           {/* Delete Button (Direct Access) */}
-          {!section.isLocked && (
+          {!isLocked && (
             <button
               onClick={onDelete}
               className="p-1.5 hover:text-red-400 text-gray-400 transition-colors rounded-md hover:bg-white/5"
@@ -205,7 +209,7 @@ const SidebarItem = ({
           )}
 
           {/* Visibility Toggle */}
-          {!section.isLocked && (
+          {!isLocked && (
             <button
               onClick={(e) => { e.stopPropagation(); onVisibilityToggle(); }}
               className={cn(
@@ -233,7 +237,7 @@ const SidebarItem = ({
                 <ArrowDown className="w-4 h-4 mr-2" /> Mover Abajo
               </DropdownMenuItem>
 
-              {!section.isLocked && (
+              {!isLocked && (
                 <>
                   <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate(e); }} className="cursor-pointer focus:bg-gray-800">
                     <Copy className="w-4 h-4 mr-2" /> Duplicar

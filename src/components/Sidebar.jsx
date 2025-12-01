@@ -4,6 +4,7 @@ import { ChevronsLeft, ChevronsRight, Settings, Shield, LogOut, Edit, Calculator
 import SidebarItem from './SidebarItem';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useToast } from "@/components/ui/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +34,7 @@ const Sidebar = ({
   onCotizadorClick,
 }) => {
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [sectionToDelete, setSectionToDelete] = useState(null);
 
   const sidebarVariants = {
@@ -53,6 +55,12 @@ const Sidebar = ({
       section.id === id ? { ...section, isVisible: !section.isVisible } : section
     );
     setSections(newSections);
+
+    const updatedSection = newSections.find(s => s.id === id);
+    toast({
+      title: updatedSection.isVisible ? "Sección Visible" : "Sección Oculta",
+      description: `La sección "${updatedSection.label}" ahora está ${updatedSection.isVisible ? 'visible' : 'oculta'}.`,
+    });
   };
 
   // --- Editor Functions ---
