@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, Link as LinkIcon, Save, Video as VideoIcon, Trash2, ExternalLink, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, Link as LinkIcon, Save, Video as VideoIcon, Trash2, ExternalLink, AlertCircle, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +23,7 @@ export default function VideoSection({ sectionData, quotationData, isEditorMode,
   const [savingTexts, setSavingTexts] = useState(false);
   const [savingVideo, setSavingVideo] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef(null);
 
   // Sync with props if they change externally
@@ -67,10 +68,17 @@ export default function VideoSection({ sectionData, quotationData, isEditorMode,
     }
     setSavingVideo(true);
 
+    // Auto-fix YouTube URLs if missing protocol
+    let urlToSave = videoUrl.trim();
+    if ((urlToSave.includes('youtube.com') || urlToSave.includes('youtu.be')) && !urlToSave.startsWith('http')) {
+      urlToSave = `https://${urlToSave}`;
+      setVideoUrl(urlToSave);
+    }
+
     if (onVideoUrlUpdate) {
-      onVideoUrlUpdate(videoUrl.trim());
-      setStoredUrl(videoUrl.trim());
-      toast({ title: "Video actualizado", description: "La URL del video se ha guardado." });
+      onVideoUrlUpdate(urlToSave);
+      setStoredUrl(urlToSave);
+      toast({ title: "Video actualizado", description: "La URL del video se ha guardado correctamente." });
     }
 
     setTimeout(() => setSavingVideo(false), 400);
@@ -93,7 +101,24 @@ export default function VideoSection({ sectionData, quotationData, isEditorMode,
       return;
     }
 
+    // 300MB limit
+    if (file.size > 300 * 1024 * 1024) {
+      setError("El archivo excede el límite de 300MB.");
+      return;
+    }
+
     setIsUploading(true);
+    setUploadProgress(0); // Reset progress
+
+    // Warn for large files
+    if (file.size > 50 * 1024 * 1024) {
+      toast({
+        title: "Subiendo archivo grande",
+        description: "El video pesa más de 50MB. Esto puede tardar unos minutos. Por favor no cierres la página.",
+        duration: 6000,
+      });
+    }
+
     try {
       // Force 'public' bucket for videos to ensure public access
       let bucketName = 'public';
@@ -106,7 +131,12 @@ export default function VideoSection({ sectionData, quotationData, isEditorMode,
       const fileExt = file.name.split('.').pop();
       const fileName = `videos/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage.from(bucketName).upload(fileName, file);
+      // Use upsert to overwrite if needed
+      const { error: uploadError } = await supabase.storage.from(bucketName).upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true
+      });
+
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage.from(bucketName).getPublicUrl(fileName);
@@ -121,7 +151,7 @@ export default function VideoSection({ sectionData, quotationData, isEditorMode,
 
     } catch (err) {
       console.error("Error uploading file:", err);
-      setError("Error al subir el archivo. Intenta de nuevo.");
+      setError("Error al subir el archivo. Verifica tu conexión o intenta con un archivo más pequeño.");
       toast({ title: "Error", description: "No se pudo subir el video.", variant: "destructive" });
     } finally {
       setIsUploading(false);
@@ -143,6 +173,9 @@ export default function VideoSection({ sectionData, quotationData, isEditorMode,
       toast({ title: "Video eliminado", description: "Se ha quitado el video." });
     }
   };
+
+  // Check if there are unsaved changes in the URL input
+  const hasUnsavedUrl = videoUrl !== storedUrl && videoUrl.trim() !== "";
 
   // --- render del player (Adapted from user code) ---
   const renderPlayer = () => {
@@ -278,20 +311,26 @@ export default function VideoSection({ sectionData, quotationData, isEditorMode,
                   <div className="flex gap-2">
                     <Input
                       type="text"
-                      className="bg-black border-gray-700 focus:border-blue-500"
+                      className={`bg-black border-gray-700 focus:border-blue-500 ${hasUnsavedUrl ? 'border-yellow-500' : ''}`}
                       placeholder="https://www.youtube.com/watch?v=..."
                       value={videoUrl}
                       onChange={handleVideoUrlChange}
                     />
                     <Button
                       type="button"
-                      className="bg-blue-600 hover:bg-blue-700 px-3"
+                      className={`${hasUnsavedUrl ? 'bg-yellow-600 hover:bg-yellow-700 animate-pulse' : 'bg-blue-600 hover:bg-blue-700'} px-3 transition-all`}
                       onClick={handleSaveVideo}
                       title="Guardar URL de video"
+                      disabled={savingVideo}
                     >
-                      <Save className="w-4 h-4" />
+                      {savingVideo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     </Button>
                   </div>
+                  {hasUnsavedUrl && (
+                    <p className="text-xs text-yellow-500 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" /> Tienes cambios sin guardar. Haz clic en el botón de guardar.
+                    </p>
+                  )}
                 </div>
 
                 <div className="pt-2">
@@ -303,9 +342,9 @@ export default function VideoSection({ sectionData, quotationData, isEditorMode,
                     disabled={isUploading}
                   >
                     {isUploading ? (
-                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Subiendo...</>
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Subiendo archivo (espera por favor)...</>
                     ) : (
-                      <>⬆ Subir MP4</>
+                      <>⬆ Subir MP4 (Máx 300MB)</>
                     )}
                   </Button>
                   <input
