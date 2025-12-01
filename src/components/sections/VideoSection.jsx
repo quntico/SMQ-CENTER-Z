@@ -82,7 +82,15 @@ const VideoSection = ({ sectionData, quotationData, isEditorMode, onVideoUrlUpda
 
     setIsUploading(true);
     try {
-      const bucketName = await getActiveBucket();
+      // Force 'public' bucket for videos to ensure public access
+      // If 'public' doesn't exist, fallback to getActiveBucket()
+      let bucketName = 'public';
+      const { error: checkError } = await supabase.storage.from(bucketName).list('', { limit: 1 });
+      if (checkError) {
+        console.warn("Public bucket not found, falling back to resolver");
+        bucketName = await getActiveBucket();
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `videos/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
