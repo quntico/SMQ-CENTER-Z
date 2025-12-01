@@ -173,6 +173,20 @@ const VideoSection = ({ sectionData, quotationData, isEditorMode, onVideoUrlUpda
                   <p className="text-xs text-gray-500">
                     Ingresa una URL de YouTube. El sistema generará el código de inserción automáticamente.
                   </p>
+
+                  {/* Debug / Warning Info */}
+                  {currentVideoUrl && !currentVideoUrl.includes('youtube') && !currentVideoUrl.includes('youtu.be') && !currentVideoUrl.includes('vimeo') && (
+                    <div className="mt-4 p-3 bg-yellow-900/30 border border-yellow-700/50 rounded-lg text-yellow-200 text-xs">
+                      <p className="font-bold mb-1">⚠️ URL no compatible con este reproductor</p>
+                      <p>La URL actual parece ser un archivo o un enlace no reconocido. La versión original solo soporta YouTube/Vimeo.</p>
+                      <p className="mt-2 font-mono bg-black/50 p-1 rounded break-all">{currentVideoUrl}</p>
+                    </div>
+                  )}
+                  {currentVideoUrl && (currentVideoUrl.includes('youtube') || currentVideoUrl.includes('youtu.be')) && (
+                    <div className="mt-2 text-xs text-green-500 flex items-center gap-1">
+                      <LinkIcon className="w-3 h-3" /> URL de YouTube detectada
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
