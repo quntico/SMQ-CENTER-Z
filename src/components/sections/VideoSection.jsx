@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { getActiveBucket } from '@/lib/bucketResolver';
 
-const VideoSection = ({ sectionData, isEditorMode, onVideoUrlUpdate }) => {
+const VideoSection = ({ sectionData, quotationData, isEditorMode, onVideoUrlUpdate }) => {
   const [urlInput, setUrlInput] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
@@ -22,9 +22,9 @@ const VideoSection = ({ sectionData, isEditorMode, onVideoUrlUpdate }) => {
   // MainContent passes 'quotationData' as a prop too.
   // Let's use quotationData.video_url if available, falling back to sectionData.video_url.
 
-  // Actually, MainContent passes 'quotationData' to VideoSection.
-  // Let's grab it from props.
-  const currentVideoUrl = sectionData.video_url || sectionData.content?.video_url || '';
+  // The video URL is stored in the root of quotationData (managed by QuotationViewer)
+  // We prioritize quotationData.video_url, but keep fallbacks just in case.
+  const currentVideoUrl = quotationData?.video_url || sectionData.video_url || sectionData.content?.video_url || '';
 
   const handleUrlSave = () => {
     if (!urlInput.trim()) return;
