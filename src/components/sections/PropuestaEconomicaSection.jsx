@@ -286,8 +286,8 @@ const PropuestaEconomicaSection = ({
     // Optimistic update
     setContent(newContent);
 
-    // Propagate to parent
-    if (onContentChange) {
+    // Propagate to parent ONLY if in editor mode (prevents DB writes for public users)
+    if (onContentChange && isEditorMode) {
       onContentChange(newContent);
     }
   };
