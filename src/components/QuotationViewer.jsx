@@ -69,8 +69,8 @@ const defaultSections = [
   { id: 'ficha', label: 'Ficha Técnica', icon: 'ListChecks', isVisible: true, component: 'ficha' },
   { id: 'cronograma', label: 'Cronograma', icon: 'Calendar', isVisible: true, component: 'cronograma' },
   { id: 'servicios', label: 'Servicios Incluidos', icon: 'Package', isVisible: true, component: 'servicios' },
-  { id: 'layout', label: 'Lay Out', icon: 'LayoutGrid', isVisible: true, component: 'layout' },
-  { id: 'video', label: 'Video', icon: 'Video', isVisible: true, component: 'video' },
+  { id: 'layout', label: 'Lay Out', icon: 'LayoutGrid', isVisible: true, isLocked: false, component: 'layout' },
+  { id: 'video', label: 'Video', icon: 'Video', isVisible: true, isLocked: false, component: 'video' },
   { id: 'proceso', label: 'Proceso', icon: 'TrendingUp', isVisible: true, component: 'proceso' },
   { id: 'calculadora_prod', label: 'Calculadora', icon: 'Calculator', isVisible: true, isLocked: false, component: 'calculadora_prod' },
   { id: 'pdf', label: 'Cotizaciones PDF', icon: 'FileDown', isVisible: true, component: 'pdf' },
@@ -83,7 +83,7 @@ const defaultSections = [
   { id: 'portada', label: 'Home', icon: 'Home', isVisible: false, component: 'portada' },
   { id: 'generales', label: 'Generales', icon: 'ClipboardList', isVisible: false, component: 'generales' },
   { id: 'exclusiones', label: 'Exclusiones', icon: 'XCircle', isVisible: false, component: 'exclusiones' },
-  { id: 'ia', label: 'Asistente IA', icon: 'BrainCircuit', isVisible: false, component: 'ia' },
+  { id: 'ia', label: 'Asistente IA', icon: 'BrainCircuit', isVisible: false, isLocked: false, component: 'ia' },
 ];
 
 const clientVisibleSections = new Set(defaultSections.filter(s => !s.adminOnly).map(s => s.id));
