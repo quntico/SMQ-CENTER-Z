@@ -8,23 +8,42 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { getActiveBucket } from '@/lib/bucketResolver';
 
-const VideoSection = ({ sectionData, quotationData, isEditorMode, onVideoUrlUpdate }) => {
+const VideoSection = ({ sectionData, quotationData, isEditorMode, onVideoUrlUpdate, onContentChange }) => {
   // Prioritize quotationData.video_url, but keep fallbacks.
   const currentVideoUrl = quotationData?.video_url || sectionData.video_url || sectionData.content?.video_url || '';
+  const title = sectionData.content?.title || "VIDEO EXPERIENCE";
+  const subtitle = sectionData.content?.subtitle || "Visualiza el funcionamiento y los detalles técnicos en alta definición.";
 
   const [urlInput, setUrlInput] = useState('');
+  const [titleInput, setTitleInput] = useState(title);
+  const [subtitleInput, setSubtitleInput] = useState(subtitle);
   const [isUploading, setIsUploading] = useState(false);
   const [playerError, setPlayerError] = useState(false);
   const fileInputRef = useRef(null);
   const { toast } = useToast();
 
-  // Initialize input with current URL when it changes
+  // Initialize inputs
   useEffect(() => {
     if (currentVideoUrl) {
       setUrlInput(currentVideoUrl);
       setPlayerError(false);
     }
   }, [currentVideoUrl]);
+
+  useEffect(() => {
+    setTitleInput(title);
+    setSubtitleInput(subtitle);
+  }, [title, subtitle]);
+
+  const handleContentSave = () => {
+    if (onContentChange) {
+      onContentChange({
+        title: titleInput,
+        subtitle: subtitleInput
+      });
+      toast({ title: "Contenido actualizado", description: "El título y subtítulo se han guardado." });
+    }
+  };
 
   const handleUrlSave = () => {
     let urlToSave = urlInput.trim();
@@ -100,10 +119,10 @@ const VideoSection = ({ sectionData, quotationData, isEditorMode, onVideoUrlUpda
 
         <div className="text-center space-y-4 animate-in fade-in slide-in-from-top-4 duration-700">
           <h2 className="text-4xl sm:text-6xl font-black tracking-tighter uppercase bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">
-            Video <span className="text-blue-500">Experience</span>
+            {title}
           </h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto font-light">
-            Visualiza el funcionamiento y los detalles técnicos en alta definición.
+            {subtitle}
           </p>
         </div>
 
@@ -112,11 +131,13 @@ const VideoSection = ({ sectionData, quotationData, isEditorMode, onVideoUrlUpda
           {currentVideoUrl ? (
             <>
               <ReactPlayer
+                key={currentVideoUrl} // Force re-mount on URL change
                 url={currentVideoUrl}
                 width="100%"
                 height="100%"
                 controls={true}
                 playing={false}
+                playsinline={true}
                 onError={(e) => {
                   console.error("Player Error:", e);
                   setPlayerError(true);
@@ -127,7 +148,8 @@ const VideoSection = ({ sectionData, quotationData, isEditorMode, onVideoUrlUpda
                   },
                   file: {
                     attributes: {
-                      controlsList: 'nodownload'
+                      controlsList: 'nodownload',
+                      playsInline: true
                     }
                   }
                 }}
@@ -162,7 +184,7 @@ const VideoSection = ({ sectionData, quotationData, isEditorMode, onVideoUrlUpda
                 </div>
                 <div>
                   <h3 className="font-bold text-xl text-white">Gestión de Video</h3>
-                  <p className="text-xs text-gray-500">Configura la fuente del video para el cliente</p>
+                  <p className="text-xs text-gray-500">Configura la fuente del video y los textos</p>
                 </div>
               </div>
               {currentVideoUrl && (
@@ -174,60 +196,75 @@ const VideoSection = ({ sectionData, quotationData, isEditorMode, onVideoUrlUpda
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-              {/* YouTube Option */}
+              {/* Text Configuration */}
               <div className="space-y-5">
                 <Label className="text-gray-300 flex items-center gap-2 text-sm font-medium uppercase tracking-wider">
-                  <LinkIcon className="w-4 h-4 text-red-500" /> YouTube / Vimeo / URL
+                  <span className="text-blue-500">T</span> Títulos de la Sección
                 </Label>
-                <div className="flex gap-3">
+                <div className="space-y-3">
                   <Input
-                    placeholder="https://youtube.com/watch?v=..."
-                    value={urlInput}
-                    onChange={(e) => setUrlInput(e.target.value)}
-                    className="bg-black border-gray-700 focus:border-blue-500 h-11 text-lg"
+                    placeholder="Título Principal"
+                    value={titleInput}
+                    onChange={(e) => setTitleInput(e.target.value)}
+                    className="bg-black border-gray-700 focus:border-blue-500"
                   />
-                  <Button onClick={handleUrlSave} className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-bold">
-                    <Save className="w-4 h-4 mr-2" /> Guardar
+                  <Input
+                    placeholder="Subtítulo / Descripción"
+                    value={subtitleInput}
+                    onChange={(e) => setSubtitleInput(e.target.value)}
+                    className="bg-black border-gray-700 focus:border-blue-500"
+                  />
+                  <Button onClick={handleContentSave} className="w-full bg-gray-800 hover:bg-gray-700 border border-gray-700">
+                    <Save className="w-4 h-4 mr-2" /> Actualizar Textos
                   </Button>
                 </div>
-                <p className="text-xs text-gray-500 leading-relaxed">
-                  Pega el enlace directo. El sistema detectará automáticamente el formato y optimizará la reproducción.
-                </p>
               </div>
 
-              {/* Upload Option */}
+              {/* Video Configuration */}
               <div className="space-y-5 border-l border-gray-800 lg:pl-10">
                 <Label className="text-gray-300 flex items-center gap-2 text-sm font-medium uppercase tracking-wider">
-                  <Upload className="w-4 h-4 text-green-500" /> Subir Archivo Directo
+                  <LinkIcon className="w-4 h-4 text-red-500" /> Fuente del Video
                 </Label>
-                <div className="flex gap-3 items-center">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileUpload}
-                    accept="video/mp4,video/webm"
-                    className="hidden"
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                    className="w-full border-gray-700 hover:bg-gray-800 hover:text-white h-11 text-base"
-                  >
-                    {isUploading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin text-blue-500" /> Subiendo a la nube...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-5 h-5 mr-2" /> Seleccionar MP4 (Máx 100MB)
-                      </>
-                    )}
-                  </Button>
+
+                <div className="space-y-4">
+                  <div className="flex gap-3">
+                    <Input
+                      placeholder="https://youtube.com/..."
+                      value={urlInput}
+                      onChange={(e) => setUrlInput(e.target.value)}
+                      className="bg-black border-gray-700 focus:border-blue-500"
+                    />
+                    <Button onClick={handleUrlSave} className="bg-blue-600 hover:bg-blue-700">
+                      <Save className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  <div className="flex gap-3 items-center">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      accept="video/mp4,video/webm"
+                      className="hidden"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      className="w-full border-gray-700 hover:bg-gray-800 hover:text-white"
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Subiendo...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-2" /> Subir MP4
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500 leading-relaxed">
-                  El video se alojará en nuestros servidores seguros de alta velocidad.
-                </p>
               </div>
             </div>
 
