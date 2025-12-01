@@ -242,8 +242,8 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
     // Filter hidden items and admin items for normal view
     menuItems = menuItems.filter(item => item.isVisible && clientVisibleSections.has(item.id.split('_copy')[0]) && !item.adminOnly);
   } else if (!isAdminAuthenticated) {
-    // Filter admin items for non-authenticated admin view
-    menuItems = menuItems.filter(item => !item.adminOnly);
+    // Filter admin items for non-authenticated admin view AND respect visibility
+    menuItems = menuItems.filter(item => item.isVisible && !item.adminOnly);
   }
 
   const handleVideoUrlUpdate = async (newUrl) => {
