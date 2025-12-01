@@ -9,7 +9,7 @@ const toBase64 = async (url) => {
     if (!url) return null;
     const response = await fetch(url);
     if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.statusText}`);
+      throw new Error(`Failed to fetch image: ${response.statusText}`);
     }
     const blob = await response.blob();
     return new Promise((resolve, reject) => {
@@ -30,193 +30,195 @@ const formatCurrency = (value, currency = 'USD') => {
 };
 
 const addClientHeader = async (doc, quotationData, margin) => {
-    const pageWidth = doc.internal.pageSize.width;
-    
-    const logoUrl = 'https://horizons-cdn.hostinger.com/0f98fff3-e5cd-4ceb-b0fd-55d6f1d7dd5c/414dc90736a6c6fc12c9f954f198e38b.png';
-    try {
-        const logoBase64 = await toBase64(logoUrl);
-        if (logoBase64) {
-            const logoWidth = 50;
-            const logoHeight = 25;
-            doc.addImage(logoBase64, 'PNG', margin, 25, logoWidth, logoHeight);
-        }
-    } catch (e) {
-        console.error("Could not add logo to PDF:", e);
+  const pageWidth = doc.internal.pageSize.width;
+
+  // Logo SMQ
+  const logoUrl = '/smq-logo.png'; // Assumes file is in public folder
+  try {
+    const logoBase64 = await toBase64(logoUrl);
+    if (logoBase64) {
+      const logoWidth = 85; // Approx 3cm
+      const logoHeight = 85; // Approx 3cm
+      const logoX = (pageWidth - logoWidth) / 2;
+      doc.addImage(logoBase64, 'PNG', logoX, 20, logoWidth, logoHeight);
     }
-    
-    let cursorY = 60;
+  } catch (e) {
+    console.error("Could not add logo to PDF:", e);
+  }
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(0, 0, 0);
+  let cursorY = 120; // Start text after logo
 
-    const clientInfo = [
-        { label: 'CLIENTE:', value: quotationData.client || 'N/A' },
-        { label: 'EMPRESA:', value: quotationData.company || 'SMQ' },
-        { label: 'PROYECTO:', value: quotationData.project || 'N/A' },
-    ];
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(0, 0, 0);
 
-    let leftCursorY = cursorY;
-    clientInfo.forEach(info => {
-        doc.text(info.label, margin, leftCursorY);
-        doc.setFont('helvetica', 'normal');
-        doc.text(info.value, margin + 55, leftCursorY);
-        doc.setFont('helvetica', 'bold');
-        leftCursorY += 12;
-    });
+  const clientInfo = [
+    { label: 'CLIENTE:', value: quotationData.client || 'N/A' },
+    { label: 'EMPRESA:', value: quotationData.company || 'SMQ' },
+    { label: 'PROYECTO:', value: quotationData.project || 'N/A' },
+  ];
 
-    const dateLabel = 'FECHA:';
-    const dateText = format(new Date(), "dd 'de' MMMM, yyyy", { locale: es });
-    const dateLabelWidth = doc.getStringUnitWidth(dateLabel) * doc.getFontSize() / doc.internal.scaleFactor;
-    const dateTextWidth = doc.getStringUnitWidth(dateText) * doc.getFontSize() / doc.internal.scaleFactor;
-    const dateBlockX = pageWidth - margin - dateTextWidth - dateLabelWidth - 5;
-
-    doc.setFont('helvetica', 'bold');
-    doc.text(dateLabel, dateBlockX, cursorY);
+  let leftCursorY = cursorY;
+  clientInfo.forEach(info => {
+    doc.text(info.label, margin, leftCursorY);
     doc.setFont('helvetica', 'normal');
-    doc.text(dateText, dateBlockX + dateLabelWidth + 5, cursorY);
+    doc.text(info.value, margin + 55, leftCursorY);
+    doc.setFont('helvetica', 'bold');
+    leftCursorY += 12;
+  });
 
-    return leftCursorY;
+  const dateLabel = 'FECHA:';
+  const dateText = format(new Date(), "dd 'de' MMMM, yyyy", { locale: es });
+  const dateLabelWidth = doc.getStringUnitWidth(dateLabel) * doc.getFontSize() / doc.internal.scaleFactor;
+  const dateTextWidth = doc.getStringUnitWidth(dateText) * doc.getFontSize() / doc.internal.scaleFactor;
+  const dateBlockX = pageWidth - margin - dateTextWidth - dateLabelWidth - 5;
+
+  doc.setFont('helvetica', 'bold');
+  doc.text(dateLabel, dateBlockX, cursorY);
+  doc.setFont('helvetica', 'normal');
+  doc.text(dateText, dateBlockX + dateLabelWidth + 5, cursorY);
+
+  return leftCursorY;
 };
 
 const addFooter = (doc) => {
-    const pageWidth = doc.internal.pageSize.width;
-    const pageHeight = doc.internal.pageSize.height;
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(100, 100, 100);
-    const text = "SMQ INTERNACIONAL - DIRECCIÓN DE VENTAS";
-    doc.text(text, pageWidth / 2, pageHeight - 25, { align: 'center' });
+  const pageWidth = doc.internal.pageSize.width;
+  const pageHeight = doc.internal.pageSize.height;
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(100, 100, 100);
+  const text = "SMQ INTERNACIONAL - DIRECCIÓN DE VENTAS";
+  doc.text(text, pageWidth / 2, pageHeight - 25, { align: 'center' });
 };
 
 export const generateCotizadorPDF = async (pdfData) => {
-    const { quotationData, costConfig, calculatedCosts, subtotals } = pdfData;
-    const { costoMaquina, totalOpcionales, utilidad_usd, comision_usd, comision_mxn, subtotalBeforeProfit } = subtotals;
-    
-    const doc = new jsPDF('p', 'pt', 'a4');
-    const brandColor = '#0052CC';
-    const textColor = [0, 0, 0];
-    const headerTextColor = [255, 255, 255];
-    const alternateRowColor = [245, 245, 245];
-    const margin = 30;
+  const { quotationData, costConfig, calculatedCosts, subtotals } = pdfData;
+  const { costoMaquina, totalOpcionales, utilidad_usd, comision_usd, comision_mxn, subtotalBeforeProfit } = subtotals;
 
-    let cursorY = await addClientHeader(doc, quotationData, margin);
-    cursorY += 10;
+  const doc = new jsPDF('p', 'pt', 'a4');
+  const brandColor = '#0052CC';
+  const textColor = [0, 0, 0];
+  const headerTextColor = [255, 255, 255];
+  const alternateRowColor = [245, 245, 245];
+  const margin = 30;
 
-    doc.setFontSize(16);
+  let cursorY = await addClientHeader(doc, quotationData, margin);
+  cursorY += 10;
+
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(brandColor);
+  doc.text('RADIOGRAFÍA DE COTIZACIÓN', doc.internal.pageSize.width / 2, cursorY, { align: 'center' });
+  cursorY += 20;
+
+  const tableStyles = (specificMargin) => ({
+    theme: 'grid',
+    styles: {
+      font: 'helvetica',
+      fontSize: 8,
+      cellPadding: 4,
+      textColor: textColor,
+      lineColor: [220, 220, 220],
+      lineWidth: 0.5,
+    },
+    headStyles: {
+      fillColor: brandColor,
+      textColor: headerTextColor,
+      fontStyle: 'bold',
+      halign: 'center',
+      fontSize: 8.5,
+    },
+    alternateRowStyles: {
+      fillColor: alternateRowColor,
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold' },
+      1: { halign: 'right' },
+    },
+    margin: specificMargin,
+  });
+
+  const addSectionTitle = (title, y, x = margin) => {
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(brandColor);
-    doc.text('RADIOGRAFÍA DE COTIZACIÓN', doc.internal.pageSize.width / 2, cursorY, { align: 'center' });
-    cursorY += 20;
+    doc.text(title, x, y);
+    return y + 15;
+  };
 
-    const tableStyles = (specificMargin) => ({
-        theme: 'grid',
-        styles: {
-            font: 'helvetica',
-            fontSize: 8,
-            cellPadding: 4,
-            textColor: textColor,
-            lineColor: [220, 220, 220],
-            lineWidth: 0.5,
-        },
-        headStyles: {
-            fillColor: brandColor,
-            textColor: headerTextColor,
-            fontStyle: 'bold',
-            halign: 'center',
-            fontSize: 8.5,
-        },
-        alternateRowStyles: {
-            fillColor: alternateRowColor,
-        },
-        columnStyles: {
-            0: { fontStyle: 'bold' },
-            1: { halign: 'right' },
-        },
-        margin: specificMargin,
-    });
+  cursorY = addSectionTitle('Costos Directos', cursorY);
+  const costosBody = [
+    ['Costo China (USD)', formatCurrency(costConfig.costo_china)],
+    ['Incoterm', costConfig.incoterm],
+    ['Costo Terrestre China (USD)', formatCurrency(costConfig.costo_terrestre_china)],
+    ['Marítimo (USD)', formatCurrency(costConfig.maritimo)],
+    ['Terrestre Nacional (USD)', formatCurrency(costConfig.terrestre_nacional)],
+    ['Instalación (USD)', formatCurrency(costConfig.instalacion)],
+    [{ content: 'Costo Máquina (Subtotal)', styles: { fillColor: alternateRowColor, fontStyle: 'bold' } }, { content: formatCurrency(costoMaquina), styles: { fillColor: alternateRowColor, fontStyle: 'bold' } }],
+  ];
+  doc.autoTable({ head: [['Concepto', 'Valor']], body: costosBody, startY: cursorY, ...tableStyles({ left: margin, right: margin }) });
+  cursorY = doc.autoTable.previous.finalY + 15;
 
-    const addSectionTitle = (title, y, x = margin) => {
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(brandColor);
-        doc.text(title, x, y);
-        return y + 15;
-    };
-
-    cursorY = addSectionTitle('Costos Directos', cursorY);
-    const costosBody = [
-        ['Costo China (USD)', formatCurrency(costConfig.costo_china)],
-        ['Incoterm', costConfig.incoterm],
-        ['Costo Terrestre China (USD)', formatCurrency(costConfig.costo_terrestre_china)],
-        ['Marítimo (USD)', formatCurrency(costConfig.maritimo)],
-        ['Terrestre Nacional (USD)', formatCurrency(costConfig.terrestre_nacional)],
-        ['Instalación (USD)', formatCurrency(costConfig.instalacion)],
-        [{ content: 'Costo Máquina (Subtotal)', styles: { fillColor: alternateRowColor, fontStyle: 'bold' } }, { content: formatCurrency(costoMaquina), styles: { fillColor: alternateRowColor, fontStyle: 'bold' } }],
-    ];
-    doc.autoTable({ head: [['Concepto', 'Valor']], body: costosBody, startY: cursorY, ...tableStyles({ left: margin, right: margin }) });
+  if (costConfig.optionals && costConfig.optionals.length > 0) {
+    cursorY = addSectionTitle('Opcionales', cursorY);
+    const opcionalesBody = costConfig.optionals.map(opt => [opt.name, formatCurrency(Number(opt.cost) || 0)]);
+    opcionalesBody.push([{ content: 'Total Opcionales', styles: { fillColor: alternateRowColor, fontStyle: 'bold' } }, { content: formatCurrency(totalOpcionales), styles: { fillColor: alternateRowColor, fontStyle: 'bold' } }]);
+    doc.autoTable({ head: [['Descripción', 'Costo (USD)']], body: opcionalesBody, startY: cursorY, ...tableStyles({ left: margin, right: margin }) });
     cursorY = doc.autoTable.previous.finalY + 15;
+  }
 
-    if (costConfig.optionals && costConfig.optionals.length > 0) {
-        cursorY = addSectionTitle('Opcionales', cursorY);
-        const opcionalesBody = costConfig.optionals.map(opt => [opt.name, formatCurrency(Number(opt.cost) || 0)]);
-        opcionalesBody.push([{ content: 'Total Opcionales', styles: { fillColor: alternateRowColor, fontStyle: 'bold' } }, { content: formatCurrency(totalOpcionales), styles: { fillColor: alternateRowColor, fontStyle: 'bold' } }]);
-        doc.autoTable({ head: [['Descripción', 'Costo (USD)']], body: opcionalesBody, startY: cursorY, ...tableStyles({ left: margin, right: margin }) });
-        cursorY = doc.autoTable.previous.finalY + 15;
+  const pageWidth = doc.internal.pageSize.width;
+  const gap = 10;
+  const leftColumnX = margin;
+  const rightColumnX = pageWidth / 2 + gap / 2;
+  const columnWidth = pageWidth / 2 - margin - gap / 2;
+
+  const formatCalculationParam = (param, value_usd) => {
+    if (param.type === 'percent') {
+      return `${param.value.toFixed(2)}% (${formatCurrency(value_usd)})`;
     }
+    return `${formatCurrency(param.value, param.type)} (${formatCurrency(value_usd)})`;
+  };
 
-    const pageWidth = doc.internal.pageSize.width;
-    const gap = 10;
-    const leftColumnX = margin;
-    const rightColumnX = pageWidth / 2 + gap / 2;
-    const columnWidth = pageWidth / 2 - margin - gap / 2;
+  let paramsCursorY = addSectionTitle('Parámetros de Cálculo', cursorY, leftColumnX);
+  const paramsBody = [
+    ['Utilidad', formatCalculationParam(costConfig.utilidad, utilidad_usd)],
+    ['Comisión', formatCalculationParam(costConfig.comision, comision_usd)],
+    ['Impuestos de Importación', `${costConfig.impuestos_percent}%`],
+    ['Tipo de Cambio (USD a MXN)', formatCurrency(costConfig.tipo_cambio, 'MXN')],
+  ];
+  doc.autoTable({
+    head: [['Parámetro', 'Valor']],
+    body: paramsBody,
+    startY: paramsCursorY,
+    ...tableStyles({ left: leftColumnX, right: pageWidth - leftColumnX - columnWidth })
+  });
+  const paramsFinalY = doc.autoTable.previous.finalY;
 
-    const formatCalculationParam = (param, value_usd) => {
-        if (param.type === 'percent') {
-            return `${param.value.toFixed(2)}% (${formatCurrency(value_usd)})`;
-        }
-        return `${formatCurrency(param.value, param.type)} (${formatCurrency(value_usd)})`;
-    };
+  let resumenCursorY = addSectionTitle('Resumen Financiero', cursorY, rightColumnX);
+  const resumenBody = [
+    ['Subtotal', formatCurrency(subtotalBeforeProfit)],
+    ['Utilidad', formatCurrency(utilidad_usd)],
+    ['Comisión', `${formatCurrency(comision_usd)} (${formatCurrency(comision_mxn, 'MXN')})`],
+    ['Precio Venta (USD)', formatCurrency(calculatedCosts.precio_venta)],
+    ['Precio Venta (MXN)', formatCurrency(calculatedCosts.precio_venta_mxn, 'MXN')],
+    ['I.V.A. (16%)', formatCurrency(calculatedCosts.iva)],
+    [{ content: 'TOTAL (USD)', styles: { fontStyle: 'bold', textColor: brandColor, fontSize: 9 } }, { content: formatCurrency(calculatedCosts.neto), styles: { fontStyle: 'bold', textColor: brandColor, fontSize: 9 } }],
+    [{ content: 'TOTAL (MXN)', styles: { fontStyle: 'bold', textColor: brandColor, fontSize: 9 } }, { content: formatCurrency(calculatedCosts.neto_mxn, 'MXN'), styles: { fontStyle: 'bold', textColor: brandColor, fontSize: 9 } }],
+    [{ content: 'Factor', styles: { fontStyle: 'bold', fontSize: 9 } }, { content: calculatedCosts.factor.toFixed(2), styles: { fontStyle: 'bold', fontSize: 9 } }],
+  ];
+  doc.autoTable({
+    head: [['Concepto', 'Valor']],
+    body: resumenBody,
+    startY: resumenCursorY,
+    ...tableStyles({ left: rightColumnX, right: margin })
+  });
+  const resumenFinalY = doc.autoTable.previous.finalY;
 
-    let paramsCursorY = addSectionTitle('Parámetros de Cálculo', cursorY, leftColumnX);
-    const paramsBody = [
-        ['Utilidad', formatCalculationParam(costConfig.utilidad, utilidad_usd)],
-        ['Comisión', formatCalculationParam(costConfig.comision, comision_usd)],
-        ['Impuestos de Importación', `${costConfig.impuestos_percent}%`],
-        ['Tipo de Cambio (USD a MXN)', formatCurrency(costConfig.tipo_cambio, 'MXN')],
-    ];
-    doc.autoTable({ 
-        head: [['Parámetro', 'Valor']], 
-        body: paramsBody, 
-        startY: paramsCursorY, 
-        ...tableStyles({ left: leftColumnX, right: pageWidth - leftColumnX - columnWidth })
-    });
-    const paramsFinalY = doc.autoTable.previous.finalY;
+  cursorY = Math.max(paramsFinalY, resumenFinalY) + 20;
 
-    let resumenCursorY = addSectionTitle('Resumen Financiero', cursorY, rightColumnX);
-    const resumenBody = [
-        ['Subtotal', formatCurrency(subtotalBeforeProfit)],
-        ['Utilidad', formatCurrency(utilidad_usd)],
-        ['Comisión', `${formatCurrency(comision_usd)} (${formatCurrency(comision_mxn, 'MXN')})`],
-        ['Precio Venta (USD)', formatCurrency(calculatedCosts.precio_venta)],
-        ['Precio Venta (MXN)', formatCurrency(calculatedCosts.precio_venta_mxn, 'MXN')],
-        ['I.V.A. (16%)', formatCurrency(calculatedCosts.iva)],
-        [{ content: 'TOTAL (USD)', styles: { fontStyle: 'bold', textColor: brandColor, fontSize: 9 } }, { content: formatCurrency(calculatedCosts.neto), styles: { fontStyle: 'bold', textColor: brandColor, fontSize: 9 } }],
-        [{ content: 'TOTAL (MXN)', styles: { fontStyle: 'bold', textColor: brandColor, fontSize: 9 } }, { content: formatCurrency(calculatedCosts.neto_mxn, 'MXN'), styles: { fontStyle: 'bold', textColor: brandColor, fontSize: 9 } }],
-        [{ content: 'Factor', styles: { fontStyle: 'bold', fontSize: 9 } }, { content: calculatedCosts.factor.toFixed(2), styles: { fontStyle: 'bold', fontSize: 9 } }],
-    ];
-    doc.autoTable({
-        head: [['Concepto', 'Valor']],
-        body: resumenBody,
-        startY: resumenCursorY,
-        ...tableStyles({ left: rightColumnX, right: margin })
-    });
-    const resumenFinalY = doc.autoTable.previous.finalY;
-    
-    cursorY = Math.max(paramsFinalY, resumenFinalY) + 20;
-
-    addFooter(doc);
-    doc.save(`Radiografia_Cotizacion_${quotationData.project.replace(/\s/g, '_')}_${format(new Date(), "yyyyMMdd")}.pdf`);
+  addFooter(doc);
+  doc.save(`Radiografia_Cotizacion_${quotationData.project.replace(/\s/g, '_')}_${format(new Date(), "yyyyMMdd")}.pdf`);
 };
 
 
@@ -300,7 +302,7 @@ export const generateFichasTecnicasPDF = async (fichas, quotationData) => {
       doc.setTextColor(40);
       doc.text(ficha.technicalDataTitle || 'Datos Técnicos', margin, cursorY);
       cursorY += 6;
-      
+
       const technicalBody = ficha.technical_data.map(item => [item.label, `${item.value} ${item.unit || ''}`]);
       doc.autoTable({
         head: [['Característica', 'Valor']],
@@ -312,11 +314,11 @@ export const generateFichasTecnicasPDF = async (fichas, quotationData) => {
     }
 
     if (ficha.components && ficha.components.length > 0) {
-       if (cursorY > pageHeight - 40) {
-          doc.addPage();
-          cursorY = margin;
-          await addFichaHeader();
-        }
+      if (cursorY > pageHeight - 40) {
+        doc.addPage();
+        cursorY = margin;
+        await addFichaHeader();
+      }
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(40);

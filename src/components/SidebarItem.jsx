@@ -180,7 +180,7 @@ const SidebarItem = ({
 
       {/* Editor Controls - Only Visible in Editor Mode & Not Collapsed */}
       {isEditorMode && !isCollapsed && (
-        <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/90 backdrop-blur-sm rounded-l-md pl-1 shadow-xl border-l border-gray-800/50 absolute right-0 h-full pr-1">
+        <div className="ml-auto flex items-center gap-1 opacity-100 transition-opacity bg-black/90 backdrop-blur-sm rounded-l-md pl-1 shadow-xl border-l border-gray-800/50 absolute right-0 h-full pr-1">
 
           {/* Rename Button (Direct Access) */}
           {!section.isLocked && (

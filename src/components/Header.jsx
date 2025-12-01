@@ -13,7 +13,7 @@ const Header = ({ quotationData, onLogoClick, onSearchClick, isBannerVisible, is
     hidden: { y: '-100%', opacity: 0 },
     visible: { y: 0, opacity: 1 },
   };
-  
+
   const showBanner = !hide_banner && isBannerVisible && (isAdminView || !isEditorMode);
 
   const bannerStyle = {
@@ -40,8 +40,8 @@ const Header = ({ quotationData, onLogoClick, onSearchClick, isBannerVisible, is
           {logo && (
             <button onClick={onLogoClick} className="focus:outline-none focus:ring-2 focus:ring-primary rounded-md">
               <div className="header-logo-container" style={logoContainerStyle}>
-                <img 
-                  src={logo} 
+                <img
+                  src={logo}
                   alt={`${company} Logo`}
                   className="header-logo"
                 />
@@ -61,7 +61,7 @@ const Header = ({ quotationData, onLogoClick, onSearchClick, isBannerVisible, is
 
         {/* Right section: Language selector and Search button */}
         <div className="flex-1 flex items-center justify-end gap-2">
-           <LanguageSelector />
+          <LanguageSelector />
           {isAdminView && (
             <Button variant="ghost" size="icon" onClick={onSearchClick} className="text-gray-400 hover:text-white hover:bg-gray-800">
               <Search className="h-5 w-5" />
@@ -80,15 +80,15 @@ const Header = ({ quotationData, onLogoClick, onSearchClick, isBannerVisible, is
             className="absolute top-full left-0 right-0 bg-black border-2 border-[--color-led-blue] p-3 text-center shadow-lg overflow-hidden whitespace-nowrap"
             style={bannerStyle}
           >
-             <div className="inline-block">
-                <div className={`flex items-center gap-8 ${marqueeClass}`}>
-                    <p className="text-sm font-semibold text-led-blue">
-                      {fullBannerText || (isEditorMode && isAdminView ? t('header.editorMode') : t('header.explore'))}
-                    </p>
-                    <p className="text-sm font-semibold text-led-blue pr-8">
-                       {fullBannerText || (isEditorMode && isAdminView ? t('header.editorMode') : t('header.explore'))}
-                    </p>
-                </div>
+            <div className="inline-block">
+              <div className={`flex items-center gap-8 ${marqueeClass}`}>
+                <p className="text-sm font-semibold text-[#2563eb]">
+                  {fullBannerText || (isEditorMode && isAdminView ? t('header.editorMode') : t('header.explore'))}
+                </p>
+                <p className="text-sm font-semibold text-[#2563eb] pr-8">
+                  {fullBannerText || (isEditorMode && isAdminView ? t('header.editorMode') : t('header.explore'))}
+                </p>
+              </div>
             </div>
           </motion.div>
         )}

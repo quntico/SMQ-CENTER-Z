@@ -47,6 +47,7 @@ export default {
       condiciones: 'Condiciones',
       admin: 'Admin',
       servicios_adicionales: 'Servicios Adicionales',
+      ventajas: 'VENTAJAS',
     },
     cronograma: {
       selectDate: 'Seleccione una fecha de inicio para visualizar el cronograma proyectado de su proyecto.',
@@ -172,6 +173,7 @@ export default {
       condiciones: 'Conditions',
       admin: 'Admin',
       servicios_adicionales: 'Additional Services',
+      ventajas: 'Advantages',
     },
     cronograma: {
       selectDate: 'Select a start date to see the projected timeline for your project.',
@@ -297,6 +299,7 @@ export default {
       condiciones: 'Condições',
       admin: 'Admin',
       servicios_adicionales: 'Serviços Adicionais',
+      ventajas: 'Vantagens',
     },
     cronograma: {
       selectDate: 'Selecione uma data de início para visualizar o cronograma projetado do seu projeto.',

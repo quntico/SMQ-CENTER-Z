@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronsLeft, ChevronsRight, Settings, Shield, LogOut, Edit, Calculator } from 'lucide-react';
+import { ChevronsLeft, ChevronsRight, Settings, Shield, LogOut, Edit, Calculator, Printer } from 'lucide-react';
 import SidebarItem from './SidebarItem';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useLanguage } from '@/contexts/LanguageContext';

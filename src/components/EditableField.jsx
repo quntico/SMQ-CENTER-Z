@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
-const EditableField = ({ 
-  value, 
-  onSave, 
-  isEditorMode, 
-  className = '', 
+const EditableField = ({
+  value,
+  onSave,
+  isEditorMode,
+  className = '',
   inputClassName = '',
   placeholder = 'Editar...',
   tag: Tag = 'span',
@@ -18,7 +18,7 @@ const EditableField = ({
   useEffect(() => {
     setInternalValue(value);
   }, [value]);
-  
+
   const handleSave = async () => {
     if (internalValue != value) {
       await onSave(internalValue);
@@ -31,8 +31,7 @@ const EditableField = ({
 
   return (
     <div className="relative w-full">
-      <Tag
-        as="input"
+      <input
         ref={inputRef}
         value={internalValue || ''}
         onChange={(e) => setInternalValue(e.target.value)}

@@ -5,50 +5,8 @@ import SectionHeader from '@/components/SectionHeader';
 import { iconMap } from '@/lib/iconMap';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Save, X, Edit, Loader2 } from 'lucide-react';
-
-const EditableContent = ({ value, onSave, isEditorMode }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [text, setText] = useState(value);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    await onSave(text);
-    setIsSaving(false);
-    setIsEditing(false);
-  };
-
-  if (!isEditorMode) {
-    return <>{value}</>;
-  }
-
-  return (
-    <div className="relative group">
-      {isEditing ? (
-        <>
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            className="w-full bg-gray-900 border border-primary rounded-md p-2 text-white resize-y focus:outline-none text-sm"
-          />
-          <div className="absolute top-1 right-1 flex gap-1">
-            <button onClick={handleSave} className="p-1.5 bg-green-600 text-white rounded-full hover:bg-green-700 disabled:bg-gray-500" disabled={isSaving}>
-              {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            </button>
-            <button onClick={() => setIsEditing(false)} className="p-1.5 bg-red-600 text-white rounded-full hover:bg-red-700">
-              <X size={14} />
-            </button>
-          </div>
-        </>
-      ) : (
-        <div onClick={() => setIsEditing(true)} className="cursor-pointer p-1 border border-transparent group-hover:border-primary/30 rounded-md transition-all relative">
-          <Edit className="absolute top-1 right-1 w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-          {value}
-        </div>
-      )}
-    </div>
-  );
-};
+import IconPicker from '@/components/IconPicker';
+import EditableField from '@/components/EditableField';
 
 
 const ServiciosSection = ({ sectionData, isEditorMode, onContentChange, activeTheme }) => {
@@ -62,7 +20,7 @@ const ServiciosSection = ({ sectionData, isEditorMode, onContentChange, activeTh
     { id: 5, icon: 'Users', title: 'Capacitación del Personal', description: 'Ofrecemos capacitación exhaustiva para su equipo operativo y de mantenimiento, cubriendo todos los aspectos del funcionamiento y cuidado de la maquinaria.' },
     { id: 6, icon: 'Shield', title: 'Soporte y Garantía', description: 'Proporcionamos un año completo de garantía con soporte técnico 24/7 para resolver cualquier duda o incidencia que pueda surgir.' },
   ];
-  
+
   const defaultContent = {
     subtitle: 'Una solución integral que va más allá de la maquinaria, garantizando el éxito de principio a fin.',
     services: defaultServices,
@@ -72,15 +30,15 @@ const ServiciosSection = ({ sectionData, isEditorMode, onContentChange, activeTh
   const services = content.services || defaultServices;
 
   const handleSave = async (index, field, value) => {
-    const updatedServices = services.map((service, i) => 
+    const updatedServices = services.map((service, i) =>
       i === index ? { ...service, [field]: value } : service
     );
     const newContent = { ...content, services: updatedServices };
-    
+
     await onContentChange(newContent);
     toast({ title: 'Servicio actualizado', description: 'El cambio se ha guardado en la nube. ☁️' });
   };
-  
+
   const handleSubtitleSave = async (value) => {
     const newContent = { ...content, subtitle: value };
     await onContentChange(newContent);
@@ -121,7 +79,12 @@ const ServiciosSection = ({ sectionData, isEditorMode, onContentChange, activeTh
           transition={{ duration: 0.5, delay: 0.2 }}
           className="text-center max-w-3xl mx-auto -mt-4 mb-12 sm:mb-16 text-gray-400"
         >
-          <EditableContent value={content.subtitle} onSave={handleSubtitleSave} isEditorMode={isEditorMode} />
+          <EditableField
+            value={content.subtitle}
+            onSave={handleSubtitleSave}
+            isEditorMode={isEditorMode}
+            className="text-lg"
+          />
         </motion.div>
 
         <motion.div
@@ -136,17 +99,44 @@ const ServiciosSection = ({ sectionData, isEditorMode, onContentChange, activeTh
             return (
               <motion.div
                 key={service.id}
-                className="bg-gray-900/50 p-8 rounded-2xl border border-gray-800/80 shadow-lg hover:shadow-primary/20 hover:border-primary/30 transition-all duration-300 flex flex-col items-center text-center"
+                className="bg-gray-900/50 p-8 rounded-2xl border border-blue-600/40 shadow-[0_0_15px_rgba(37,99,235,0.15)] hover:shadow-[0_0_30px_rgba(37,99,235,0.3)] hover:border-blue-500 transition-all duration-300 flex flex-col items-center text-center"
                 variants={itemVariants}
               >
-                <div className="mb-6 bg-primary/10 p-5 rounded-full">
-                  <IconComponent className="w-12 h-12 text-primary" />
+                <div className="mb-6 bg-blue-600/10 p-5 rounded-full border border-blue-600/20 relative group">
+                  <IconPicker
+                    value={service.icon}
+                    onChange={(val) => handleSave(index, 'icon', val)}
+                    isEditorMode={isEditorMode}
+                    trigger={
+                      <div className="cursor-pointer">
+                        <IconComponent className="w-12 h-12 text-blue-600" />
+                        {isEditorMode && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Edit className="w-6 h-6 text-white" />
+                          </div>
+                        )}
+                      </div>
+                    }
+                  />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">
-                  <EditableContent value={service.title} onSave={(v) => handleSave(index, 'title', v)} isEditorMode={isEditorMode} />
+                <h3 className="text-xl font-bold text-white mb-3 w-full">
+                  <EditableField
+                    value={service.title}
+                    onSave={(v) => handleSave(index, 'title', v)}
+                    isEditorMode={isEditorMode}
+                    className="text-center justify-center"
+                    inputClassName="text-center"
+                  />
                 </h3>
-                <p className="text-gray-400 text-sm leading-relaxed">
-                  <EditableContent value={service.description} onSave={(v) => handleSave(index, 'description', v)} isEditorMode={isEditorMode} />
+                <p className="text-gray-400 text-sm leading-relaxed w-full">
+                  <EditableField
+                    value={service.description}
+                    onSave={(v) => handleSave(index, 'description', v)}
+                    isEditorMode={isEditorMode}
+                    tag="p"
+                    className="text-center"
+                    inputClassName="text-center"
+                  />
                 </p>
               </motion.div>
             );

@@ -1,97 +1,239 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useToast } from '@/components/ui/use-toast';
-import SectionHeader from '@/components/SectionHeader';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Save, VideoOff, Youtube } from 'lucide-react';
+import React, { useState } from "react";
 
-const VideoSection = ({ sectionData, quotationData, isEditorMode, onVideoUrlUpdate }) => {
-  const { toast } = useToast();
-  const [videoUrl, setVideoUrl] = useState(quotationData?.video_url || '');
-  const [embedUrl, setEmbedUrl] = useState('');
+function buildYouTubeEmbed(input) {
+  const url = input.trim();
+  if (!url) return null;
 
-  useEffect(() => {
-    setVideoUrl(quotationData?.video_url || '');
-  }, [quotationData?.video_url]);
-
-  useEffect(() => {
-    if (videoUrl) {
-      // Convert YouTube watch URL to embed URL
-      const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-      const youtubeMatch = videoUrl.match(youtubeRegex);
-      if (youtubeMatch && youtubeMatch[1]) {
-        setEmbedUrl(`https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1&mute=1&loop=1&playlist=${youtubeMatch[1]}&controls=0`);
-        return;
-      }
-      // Basic check for other embeddable URLs
-      if (videoUrl.includes('player.vimeo.com') || videoUrl.includes('.mp4')) {
-        setEmbedUrl(videoUrl);
-        return;
-      }
+  // youtu.be/VIDEO_ID
+  if (url.includes("youtu.be/")) {
+    const parts = url.split("youtu.be/");
+    if (parts[1]) {
+      const id = parts[1].split(/[?&]/)[0];
+      return `https://www.youtube.com/embed/${id}?rel=0`;
     }
-    setEmbedUrl('');
-  }, [videoUrl]);
+  }
 
-  const handleSave = () => {
-    onVideoUrlUpdate(videoUrl);
-    toast({
-      title: '¡Video actualizado! 🎬',
-      description: 'El enlace del video ha sido guardado.',
-    });
+  // /embed/VIDEO_ID
+  if (url.includes("/embed/")) {
+    const parts = url.split("/embed/");
+    if (parts[1]) {
+      const id = parts[1].split(/[?&]/)[0];
+      return `https://www.youtube.com/embed/${id}?rel=0`;
+    }
+  }
+
+  // watch?v=VIDEO_ID
+  if (url.includes("watch?")) {
+    const match = url.match(/[?&]v=([^&]+)/);
+    if (match && match[1]) {
+      const id = match[1];
+      return `https://www.youtube.com/embed/${id}?rel=0`;
+    }
+  }
+
+  // Si pegaron directamente el ID
+  if (/^[a-zA-Z0-9_-]{6,}$/.test(url)) {
+    return `https://www.youtube.com/embed/${url}?rel=0`;
+  }
+
+  return null;
+}
+
+function detectKind(url) {
+  const value = url.trim().toLowerCase();
+  if (!value) return "none";
+
+  if (value.includes("youtube.com") || value.includes("youtu.be")) {
+    return "youtube";
+  }
+
+  if (value.endsWith(".mp4") || value.endsWith(".webm") || value.endsWith(".ogg")) {
+    return "file";
+  }
+
+  return "none";
+}
+
+const VideoSection = () => {
+  const [urlInput, setUrlInput] = useState(
+    "https://www.youtube.com/watch?v=dmf6bYGeb6w"
+  );
+  const [kind, setKind] = useState("none");
+  const [youtubeEmbed, setYouTubeEmbed] = useState(null);
+  const [fileUrl, setFileUrl] = useState(null);
+  const [error, setError] = useState(null);
+
+  const handleLoad = () => {
+    const detected = detectKind(urlInput);
+    setKind(detected);
+
+    if (detected === "youtube") {
+      const embed = buildYouTubeEmbed(urlInput);
+      if (!embed) {
+        setError("No pude construir la URL de embed de YouTube. Revisa la liga.");
+        setYouTubeEmbed(null);
+        setFileUrl(null);
+        return;
+      }
+      setError(null);
+      setYouTubeEmbed(embed);
+      setFileUrl(null);
+      console.log("YouTube embed URL:", embed);
+    } else if (detected === "file") {
+      setError(null);
+      setFileUrl(urlInput.trim());
+      setYouTubeEmbed(null);
+      console.log("Archivo de video URL:", urlInput.trim());
+    } else {
+      setError(
+        "La URL no parece ser ni un video de YouTube ni un archivo .mp4 / .webm / .ogg"
+      );
+      setYouTubeEmbed(null);
+      setFileUrl(null);
+    }
   };
 
   return (
-    <div className="py-4 sm:py-8 w-full h-full flex flex-col">
-      <SectionHeader sectionData={sectionData} />
-      
-      <div className="flex-grow flex flex-col items-center justify-center mt-8">
-        <AnimatePresence>
-          {isEditorMode && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="w-full max-w-2xl mb-8"
-            >
-              <div className="flex items-center gap-2 bg-gray-900/50 p-4 rounded-lg border border-gray-800">
-                <Youtube className="text-primary w-6 h-6" />
-                <Input
-                  type="text"
-                  placeholder="Pega aquí la URL del video (ej. YouTube, Vimeo)"
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  className="flex-grow"
-                />
-                <Button onClick={handleSave} size="sm">
-                  <Save className="w-4 h-4 mr-2" />
-                  Guardar
-                </Button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        padding: "16px",
+        boxSizing: "border-box",
+        backgroundColor: "#111111",
+        color: "#FFFFFF",
+        gap: "16px",
+      }}
+    >
+      {/* Input + botón */}
+      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+        <input
+          type="text"
+          value={urlInput}
+          onChange={(e) => setUrlInput(e.target.value)}
+          placeholder="Pega una liga de YouTube o un archivo .mp4"
+          style={{
+            flex: 1,
+            padding: "10px 14px",
+            borderRadius: "10px",
+            border: "1px solid #444",
+            backgroundColor: "#000",
+            color: "#fff",
+            fontSize: "16px",
+          }}
+        />
+        <button
+          type="button"
+          onClick={handleLoad}
+          style={{
+            padding: "10px 18px",
+            borderRadius: "10px",
+            border: "none",
+            backgroundColor: "#007BFF",
+            color: "#FFFFFF",
+            fontWeight: 600,
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Cargar video
+        </button>
+      </div>
 
-        <div className="w-full max-w-6xl aspect-video bg-black rounded-2xl shadow-2xl shadow-primary/10 overflow-hidden border-2 border-gray-800">
-          {embedUrl ? (
-            <div className="w-full h-full overflow-auto [-webkit-overflow-scrolling:touch]">
-              <iframe
-                src={embedUrl}
-                title="Video Player"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="w-full h-full"
-              ></iframe>
-            </div>
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 bg-grid-gray-700/20">
-              <VideoOff className="w-16 h-16 mb-4" />
-              <h3 className="text-xl font-bold text-gray-400">No hay video disponible</h3>
-              {isEditorMode && <p className="text-sm mt-2">Pega una URL en el campo de arriba para mostrar un video.</p>}
-            </div>
-          )}
+      {/* Info de depuración */}
+      <div style={{ fontSize: "12px", color: "#AAAAAA" }}>
+        Tipo detectado: {kind}
+        {youtubeEmbed && (
+          <div style={{ marginTop: 4 }}>YouTube embed: {youtubeEmbed}</div>
+        )}
+        {fileUrl && (
+          <div style={{ marginTop: 4 }}>Archivo de video: {fileUrl}</div>
+        )}
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div
+          style={{
+            padding: "8px 12px",
+            borderRadius: "8px",
+            backgroundColor: "#661111",
+            color: "#FFDADA",
+            fontSize: "13px",
+          }}
+        >
+          {error}
         </div>
+      )}
+
+      {/* Contenedor del reproductor */}
+      <div
+        style={{
+          position: "relative",
+          paddingBottom: "56.25%",
+          height: 0,
+          width: "100%",
+          borderRadius: "12px",
+          overflow: "hidden",
+          backgroundColor: "#000000",
+          boxShadow: "0 0 24px rgba(0,0,0,0.7)",
+          marginTop: "8px",
+        }}
+      >
+        {kind === "youtube" && youtubeEmbed && (
+          <iframe
+            src={youtubeEmbed}
+            title="Video YouTube"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              border: "none",
+            }}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
+        )}
+
+        {kind === "file" && fileUrl && (
+          <video
+            src={fileUrl}
+            controls
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              backgroundColor: "black",
+            }}
+          >
+            Tu navegador no soporta video HTML5.
+          </video>
+        )}
+
+        {kind === "none" && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#808080",
+              fontSize: "14px",
+              padding: "12px",
+              textAlign: "center",
+            }}
+          >
+            Pega una liga de YouTube o la URL directa de un archivo .mp4 y haz
+            clic en "Cargar video".
+          </div>
+        )}
       </div>
     </div>
   );

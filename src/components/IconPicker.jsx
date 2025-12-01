@@ -11,10 +11,10 @@ const IconPicker = ({ value, onChange, trigger, children, isEditorMode }) => {
   const [search, setSearch] = useState('');
 
   const filteredIcons = useMemo(() => {
-    if (!search) return iconList.slice(0, 100);
-    return iconList.filter(name => 
+    if (!search) return iconList.slice(0, 2000);
+    return iconList.filter(name =>
       name.toLowerCase().includes(search.toLowerCase())
-    ).slice(0, 100);
+    ).slice(0, 2000);
   }, [search]);
 
   if (!isEditorMode) {
@@ -28,7 +28,7 @@ const IconPicker = ({ value, onChange, trigger, children, isEditorMode }) => {
       <DialogTrigger asChild onClick={(e) => e.stopPropagation()}>
         {trigger || children || (
           <Button variant="outline" size="icon" className="h-8 w-8 border-dashed border-blue-500/50 hover:border-blue-500">
-             {CurrentIcon && <CurrentIcon className="h-4 w-4" />}
+            {CurrentIcon && <CurrentIcon className="h-4 w-4" />}
           </Button>
         )}
       </DialogTrigger>
@@ -36,7 +36,7 @@ const IconPicker = ({ value, onChange, trigger, children, isEditorMode }) => {
         <DialogHeader>
           <DialogTitle className="text-blue-500">Seleccionar Icono</DialogTitle>
         </DialogHeader>
-        
+
         <div className="relative my-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
@@ -57,7 +57,7 @@ const IconPicker = ({ value, onChange, trigger, children, isEditorMode }) => {
               {filteredIcons.map((iconName) => {
                 const IconComponent = iconMap[iconName];
                 const isSelected = value === iconName;
-                
+
                 return (
                   <Button
                     key={iconName}

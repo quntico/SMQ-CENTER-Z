@@ -39,7 +39,7 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
-  
+
   useEffect(() => {
     let initialConfig;
     if (quotationData && quotationData.cost_config) {
@@ -48,9 +48,9 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
         isEnabled: opt.isEnabled !== undefined ? opt.isEnabled : true, // Default to true if not set
       }));
 
-      initialConfig = { 
-        ...defaultCostConfig, 
-        ...quotationData.cost_config, 
+      initialConfig = {
+        ...defaultCostConfig,
+        ...quotationData.cost_config,
         optionals: optionalsWithState,
         utilidad: quotationData.cost_config.utilidad || defaultCostConfig.utilidad,
         comision: quotationData.cost_config.comision || defaultCostConfig.comision,
@@ -62,9 +62,9 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
 
     const initialDisplay = {};
     Object.keys(initialConfig).forEach(key => {
-        if (typeof initialConfig[key] !== 'object') {
-            initialDisplay[key] = String(initialConfig[key] || 0);
-        }
+      if (typeof initialConfig[key] !== 'object') {
+        initialDisplay[key] = String(initialConfig[key] || 0);
+      }
     });
     setDisplayConfig(initialDisplay);
 
@@ -83,11 +83,11 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
       comision,
       tipo_cambio = 1
     } = costConfig;
-    
+
     const activeOptionals = optionals.filter(opt => opt.isEnabled);
     const total_opcionales = activeOptionals.reduce((sum, opt) => sum + (Number(opt.cost) || 0), 0);
     const costo_final_maquina = costo_maquina + total_opcionales;
-    
+
     const incrementables = costo_terrestre_china + maritimo;
     const base_impuestos = costo_final_maquina + incrementables;
     const impuestos = base_impuestos * (impuestos_percent / 100);
@@ -103,31 +103,31 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
         default: break;
       }
     }
-    
+
     const precio_venta = costo_final_operacion + utilidad_usd;
-    
+
     let comision_usd = 0;
     if (comision) {
-        switch (comision.type) {
-            case 'percent': comision_usd = utilidad_usd * (comision.value / 100); break;
-            case 'usd': comision_usd = comision.value; break;
-            case 'mxn': comision_usd = comision.value / tipo_cambio; break;
-            default: break;
-        }
+      switch (comision.type) {
+        case 'percent': comision_usd = utilidad_usd * (comision.value / 100); break;
+        case 'usd': comision_usd = comision.value; break;
+        case 'mxn': comision_usd = comision.value / tipo_cambio; break;
+        default: break;
+      }
     }
-    
+
     const precio_venta_final = precio_venta + comision_usd;
     const iva = precio_venta_final * 0.16;
     const neto = precio_venta_final + iva;
     const factor = costo_final_operacion > 0 ? precio_venta_final / costo_final_operacion : 0;
-    
+
     const subtotalsForPdf = {
-        costoMaquina: costo_maquina,
-        totalOpcionales: total_opcionales,
-        subtotalBeforeProfit: costo_final_operacion,
-        utilidad_usd,
-        comision_usd,
-        comision_mxn: comision_usd * tipo_cambio,
+      costoMaquina: costo_maquina,
+      totalOpcionales: total_opcionales,
+      subtotalBeforeProfit: costo_final_operacion,
+      utilidad_usd,
+      comision_usd,
+      comision_mxn: comision_usd * tipo_cambio,
     };
 
     return {
@@ -157,7 +157,7 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
     const numValue = (name !== 'incoterm') ? parseFloat(value) || 0 : value;
     setCostConfig(prev => ({ ...prev, [name]: numValue }));
   };
-  
+
   const handleCalculationInputChange = (id, config) => {
     setCostConfig(prev => ({ ...prev, [id]: config }));
   };
@@ -168,14 +168,14 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
   };
 
   const updateOptional = (id, field, value) => {
-    const updatedOptionals = (costConfig.optionals || []).map(opt => 
+    const updatedOptionals = (costConfig.optionals || []).map(opt =>
       opt.id === id ? { ...opt, [field]: value } : opt
     );
     setCostConfig(prev => ({ ...prev, optionals: updatedOptionals }));
   };
-  
+
   const toggleOptional = (id) => {
-    const updatedOptionals = (costConfig.optionals || []).map(opt => 
+    const updatedOptionals = (costConfig.optionals || []).map(opt =>
       opt.id === id ? { ...opt, isEnabled: !opt.isEnabled } : opt
     );
     setCostConfig(prev => ({ ...prev, optionals: updatedOptionals }));
@@ -227,34 +227,34 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
   const handleReset = () => {
     let initialConfig;
     if (quotationData && quotationData.cost_config) {
-        initialConfig = { ...defaultCostConfig, ...quotationData.cost_config, optionals: quotationData.cost_config.optionals || [] };
+      initialConfig = { ...defaultCostConfig, ...quotationData.cost_config, optionals: quotationData.cost_config.optionals || [] };
     } else {
-        initialConfig = defaultCostConfig;
+      initialConfig = defaultCostConfig;
     }
     setCostConfig(initialConfig);
     const initialDisplay = {};
     Object.keys(initialConfig).forEach(key => {
-        if (typeof initialConfig[key] !== 'object') {
-            initialDisplay[key] = String(initialConfig[key] || 0);
-        }
+      if (typeof initialConfig[key] !== 'object') {
+        initialDisplay[key] = String(initialConfig[key] || 0);
+      }
     });
     setDisplayConfig(initialDisplay);
     toast({ title: "Valores restaurados 🔄", description: "Los campos se han restablecido a sus valores guardados." });
   };
-  
+
   const handleExportPDF = async () => {
     setIsExporting(true);
-    const costConfigForPdf = { 
+    const costConfigForPdf = {
       ...costConfig,
       optionals: costConfig.optionals.filter(opt => opt.isEnabled) // Only export enabled optionals
     };
     costConfigForPdf.costo_china = costConfig.costo_maquina;
 
     const pdfPayload = {
-        quotationData,
-        costConfig: costConfigForPdf,
-        calculatedCosts,
-        subtotals: calculatedCosts.subtotalsForPdf,
+      quotationData,
+      costConfig: costConfigForPdf,
+      calculatedCosts,
+      subtotals: calculatedCosts.subtotalsForPdf,
     };
     try {
       await generateCotizadorPDF(pdfPayload);
@@ -284,10 +284,12 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 sm:p-6 md:p-8 lg:p-8 xl:p-12">
       <div className="max-w-7xl mx-auto px-2 sm:px-0">
         <div className="flex items-center gap-4 mb-8">
-          <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center"><Calculator className="w-6 h-6 text-primary" /></div>
+          <div className="w-12 h-12 bg-[#2563eb]/10 rounded-lg flex items-center justify-center border border-[#2563eb]/20 shadow-[0_0_15px_rgba(37,99,235,0.2)]">
+            <Calculator className="w-6 h-6 text-[#2563eb]" />
+          </div>
           <div>
-            <h1 className="text-3xl font-bold text-white">Cotizador de Proyectos</h1>
-            <p className="text-gray-400">Máquina: <span className="font-semibold text-primary">{quotationData.project}</span></p>
+            <h1 className="text-3xl font-bold text-[#2563eb]">Cotizador de Proyectos</h1>
+            <p className="text-gray-400">Máquina: <span className="font-semibold text-[#2563eb]">{quotationData.project}</span></p>
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
@@ -301,50 +303,51 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
               <div className="space-y-2"><Label htmlFor="instalacion">Instalación (USD)</Label><Input type="text" id="instalacion" name="instalacion" value={displayConfig.instalacion || ''} onChange={handleInputChange} onFocus={handleFocus} /></div>
             </div>
 
-            <div className="space-y-4 p-4 bg-gray-900/50 rounded-lg">
-                <div className='flex justify-between items-center'>
-                    <Label className="text-gray-300 flex items-center gap-2"><PackagePlus size={16}/> Opcionales</Label>
-                    <Button variant="outline" size="sm" onClick={addOptional}><PlusCircle className="h-4 w-4 mr-2" />Agregar</Button>
-                </div>
-                <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                    {(costConfig.optionals || []).map(opt => (
-                        <div key={opt.id} className={`flex items-center gap-2 transition-opacity ${!opt.isEnabled ? 'opacity-50' : ''}`}>
-                            <Switch
-                              checked={opt.isEnabled}
-                              onCheckedChange={() => toggleOptional(opt.id)}
-                            />
-                            <Input 
-                              placeholder="Descripción del opcional" 
-                              value={opt.name} 
-                              onChange={e => updateOptional(opt.id, 'name', e.target.value)}
-                              disabled={!opt.isEnabled}
-                            />
-                            <div className="relative w-40">
-                                <Input 
-                                  type="number" 
-                                  placeholder="Costo" 
-                                  value={opt.cost} 
-                                  onChange={e => updateOptional(opt.id, 'cost', e.target.value)} 
-                                  onFocus={handleFocus} 
-                                  className="pr-10"
-                                  disabled={!opt.isEnabled}
-                                />
-                                <span className="absolute inset-y-0 right-3 flex items-center text-xs text-gray-400">USD</span>
-                            </div>
-                            <Button variant="ghost" size="icon" onClick={() => removeOptional(opt.id)} className="text-red-500 hover:bg-red-500/10 hover:text-red-400"><Trash2 size={16} /></Button>
-                        </div>
-                    ))}
-                </div>
-                {(costConfig.optionals || []).length > 0 && (
-                    <div className="flex justify-end items-center pt-2 border-t border-gray-700">
-                        <span className="text-sm text-gray-400 mr-2">Total Opcionales Activos:</span>
-                        <span className="text-sm font-bold text-white">{formatCurrency(calculatedCosts.total_opcionales)}</span>
+            <div className="space-y-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
+              <div className='flex justify-between items-center'>
+                <Label className="text-gray-300 flex items-center gap-2"><PackagePlus size={16} /> Opcionales</Label>
+                <Button variant="outline" size="sm" onClick={addOptional} className="border-gray-700 hover:bg-gray-800"><PlusCircle className="h-4 w-4 mr-2" />Agregar</Button>
+              </div>
+              <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                {(costConfig.optionals || []).map(opt => (
+                  <div key={opt.id} className={`flex items-center gap-2 transition-opacity ${!opt.isEnabled ? 'opacity-50' : ''}`}>
+                    <Switch
+                      checked={opt.isEnabled}
+                      onCheckedChange={() => toggleOptional(opt.id)}
+                      className="data-[state=checked]:bg-[#2563eb]"
+                    />
+                    <Input
+                      placeholder="Descripción del opcional"
+                      value={opt.name}
+                      onChange={e => updateOptional(opt.id, 'name', e.target.value)}
+                      disabled={!opt.isEnabled}
+                    />
+                    <div className="relative w-40">
+                      <Input
+                        type="number"
+                        placeholder="Costo"
+                        value={opt.cost}
+                        onChange={e => updateOptional(opt.id, 'cost', e.target.value)}
+                        onFocus={handleFocus}
+                        className="pr-10"
+                        disabled={!opt.isEnabled}
+                      />
+                      <span className="absolute inset-y-0 right-3 flex items-center text-xs text-gray-400">USD</span>
                     </div>
-                )}
+                    <Button variant="ghost" size="icon" onClick={() => removeOptional(opt.id)} className="text-red-500 hover:bg-red-500/10 hover:text-red-400"><Trash2 size={16} /></Button>
+                  </div>
+                ))}
+              </div>
+              {(costConfig.optionals || []).length > 0 && (
+                <div className="flex justify-end items-center pt-2 border-t border-gray-700">
+                  <span className="text-sm text-gray-400 mr-2">Total Opcionales Activos:</span>
+                  <span className="text-sm font-bold text-[#2563eb]">{formatCurrency(calculatedCosts.total_opcionales)}</span>
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">
-              <CalculationInput 
+              <CalculationInput
                 label="Utilidad"
                 id="utilidad"
                 config={costConfig.utilidad}
@@ -353,7 +356,7 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
                 tipoCambio={costConfig.tipo_cambio}
               />
               <div>
-                <CalculationInput 
+                <CalculationInput
                   label="Comisión"
                   id="comision"
                   config={costConfig.comision}
@@ -366,20 +369,20 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
                 </p>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="space-y-3 p-4 bg-gray-900/50 rounded-lg">
+              <div className="space-y-3 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
                 <Label htmlFor="impuestos_percent" className="text-gray-300">Impuestos de Importación</Label>
                 <div className="relative"><Input type="text" id="impuestos_percent" name="impuestos_percent" value={displayConfig.impuestos_percent || ''} onChange={handleInputChange} onFocus={handleFocus} /><div className="absolute inset-y-0 right-3 flex items-center text-gray-400">%</div></div>
               </div>
-              <div className="space-y-3 p-4 bg-gray-900/50 rounded-lg">
+              <div className="space-y-3 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
                 <Label htmlFor="tipo_cambio" className="text-gray-300">Tipo de Cambio (USD a MXN)</Label>
                 <div className="relative"><Input type="text" id="tipo_cambio" name="tipo_cambio" value={costConfig.tipo_cambio || ''} onChange={handleInputChange} onFocus={handleFocus} /><div className="absolute inset-y-0 right-3 flex items-center text-gray-400">MXN</div></div>
               </div>
             </div>
           </div>
           <div className="lg:col-span-2">
-            <div className="sticky top-8 bg-gray-900/50 rounded-lg border border-gray-800 p-6 space-y-6">
+            <div className="sticky top-8 bg-gray-900/50 rounded-lg border border-gray-800 p-6 space-y-6 shadow-lg">
               <MachineFactorCard
                 machineName={quotationData.project}
                 onMachineNameChange={handleProjectNameChange}
@@ -388,7 +391,7 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
                 sellingPrice={calculatedCosts.precio_venta}
               />
               <div>
-                <h2 className="text-xl font-bold text-white mb-4">Resumen Financiero</h2>
+                <h2 className="text-xl font-bold text-[#2563eb] mb-4">Resumen Financiero</h2>
                 <div className="space-y-1">
                   <SummaryRow label="Costo Máquina" valueUsd={costConfig.costo_maquina} isSubtle />
                   <SummaryRow label="Opcionales Activos" valueUsd={calculatedCosts.total_opcionales} isSubtle />
@@ -399,21 +402,21 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
                   <SummaryRow label="Costo Final Operación" valueUsd={calculatedCosts.costo_final_operacion} isBold />
                   <SummaryRow label="Utilidad" valueUsd={calculatedCosts.utilidad_usd} isSubtle />
                   <SummaryRow label="Comisión" valueUsd={calculatedCosts.comision_usd} valueMxn={calculatedCosts.comision_mxn} isSubtle />
-                  
+
                   <div className="pt-4 mt-4 border-t border-dashed border-gray-700">
                     <SummaryRow label="Precio Venta" valueUsd={calculatedCosts.precio_venta} valueMxn={calculatedCosts.precio_venta_mxn} isBold />
                     <SummaryRow label="I.V.A. (16%)" valueUsd={calculatedCosts.iva} valueMxn={calculatedCosts.iva_mxn} />
                   </div>
                   <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-700">
-                    <span className="text-sm font-bold text-primary">TOTAL</span>
+                    <span className="text-sm font-bold text-[#2563eb]">TOTAL</span>
                     <div className="text-right">
-                      <p className="font-mono text-sm font-bold text-primary">{formatCurrency(calculatedCosts.neto, 'USD')}</p>
-                      <p className="font-mono text-xs text-primary/80">{formatCurrency(calculatedCosts.neto_mxn, 'MXN')}</p>
+                      <p className="font-mono text-sm font-bold text-[#2563eb]">{formatCurrency(calculatedCosts.neto, 'USD')}</p>
+                      <p className="font-mono text-xs text-[#2563eb]/80">{formatCurrency(calculatedCosts.neto_mxn, 'MXN')}</p>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center pt-4 mt-4 border-t border-primary/20">
-                    <span className="text-lg font-bold text-primary flex items-center gap-2"><TrendingUp size={20}/>Factor</span>
-                    <p className="font-mono text-xl font-bold text-primary">{calculatedCosts.factor.toFixed(2)}</p>
+                  <div className="flex justify-between items-center pt-4 mt-4 border-t border-[#2563eb]/20">
+                    <span className="text-lg font-bold text-[#2563eb] flex items-center gap-2"><TrendingUp size={20} />Factor</span>
+                    <p className="font-mono text-xl font-bold text-[#2563eb]">{calculatedCosts.factor.toFixed(2)}</p>
                   </div>
                 </div>
               </div>
@@ -421,12 +424,12 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
           </div>
         </div>
         <div className="flex flex-col sm:flex-row justify-center sm:justify-end gap-y-3 sm:gap-3 mt-8">
-          <Button variant="outline" onClick={handleReset} disabled={isSaving || isExporting} className="w-full sm:w-auto"><Eraser className="h-4 w-4 mr-2" />Restablecer</Button>
-          <Button onClick={handleExportPDF} variant="outline" disabled={isSaving || isExporting} className="w-full sm:w-auto">
+          <Button variant="outline" onClick={handleReset} disabled={isSaving || isExporting} className="w-full sm:w-auto border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10 hover:text-[#2563eb]"><Eraser className="h-4 w-4 mr-2" />Restablecer</Button>
+          <Button onClick={handleExportPDF} variant="outline" disabled={isSaving || isExporting} className="w-full sm:w-auto border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10 hover:text-[#2563eb]">
             {isExporting ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <FileDown className="h-4 w-4 mr-2" />}
             {isExporting ? 'Exportando...' : 'Exportar PDF'}
           </Button>
-          <Button onClick={handleSave} disabled={isSaving || isExporting} className="bg-primary text-black hover:bg-primary/90 w-full sm:w-auto">{isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}Guardar Cambios</Button>
+          <Button onClick={handleSave} disabled={isSaving || isExporting} className="bg-[#2563eb] text-white hover:bg-[#1d4ed8] w-full sm:w-auto shadow-[0_0_10px_rgba(37,99,235,0.4)]">{isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}Guardar Cambios</Button>
         </div>
       </div>
     </motion.div>

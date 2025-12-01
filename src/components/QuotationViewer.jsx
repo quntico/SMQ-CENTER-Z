@@ -79,11 +79,11 @@ const defaultSections = [
   { id: 'propuesta', label: 'Propuesta Económica', icon: 'DollarSign', isVisible: true, component: 'propuesta' },
 
   // Hidden/Auxiliary
-  { id: 'ventajas', label: 'VENTAJAS', icon: 'Star', isVisible: false, isLocked: true, component: 'ventajas' },
-  { id: 'portada', label: 'Home', icon: 'Home', isVisible: false, isLocked: true, component: 'portada' },
+  { id: 'ventajas', label: 'VENTAJAS', icon: 'Star', isVisible: false, component: 'ventajas' },
+  { id: 'portada', label: 'Home', icon: 'Home', isVisible: false, component: 'portada' },
   { id: 'generales', label: 'Generales', icon: 'ClipboardList', isVisible: false, component: 'generales' },
   { id: 'exclusiones', label: 'Exclusiones', icon: 'XCircle', isVisible: false, component: 'exclusiones' },
-  { id: 'ia', label: 'Asistente IA', icon: 'BrainCircuit', isVisible: false, isLocked: true, component: 'ia' },
+  { id: 'ia', label: 'Asistente IA', icon: 'BrainCircuit', isVisible: false, component: 'ia' },
 ];
 
 const clientVisibleSections = new Set(defaultSections.filter(s => !s.adminOnly).map(s => s.id));
@@ -124,9 +124,11 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
   const idleTimerRef = useRef(null);
   const initialDisplayTimerRef = useRef(null);
   const hasInteracted = useRef(false);
+  const [previewData, setPreviewData] = useState(null);
   const { t } = useLanguage();
 
   const quotationData = themes[activeTheme];
+  const displayData = previewData ? { ...quotationData, ...previewData } : quotationData;
 
   useEffect(() => {
     const processedData = {
@@ -150,22 +152,22 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
   }, []);
 
   const resetIdleTimer = useCallback(() => {
-    if (!quotationData) return;
+    if (!displayData) return;
     if (!hasInteracted.current) {
       hasInteracted.current = true;
       clearTimeout(initialDisplayTimerRef.current);
     }
     setIsBannerVisible(false);
     clearTimeout(idleTimerRef.current);
-    const timeoutDuration = (quotationData.idle_timeout || 10) * 1000;
+    const timeoutDuration = (displayData.idle_timeout || 10) * 1000;
     idleTimerRef.current = setTimeout(() => {
       setIsBannerVisible(true);
     }, timeoutDuration);
-  }, [quotationData]);
+  }, [displayData]);
 
   useEffect(() => {
-    if (!quotationData) return;
-    const initialTime = (quotationData.initial_display_time || 5) * 1000;
+    if (!displayData) return;
+    const initialTime = (displayData.initial_display_time || 5) * 1000;
     initialDisplayTimerRef.current = setTimeout(() => {
       if (!hasInteracted.current) setIsBannerVisible(false);
     }, initialTime);
@@ -177,14 +179,14 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
       clearTimeout(idleTimerRef.current);
       clearTimeout(initialDisplayTimerRef.current);
     };
-  }, [resetIdleTimer, quotationData]);
+  }, [resetIdleTimer, displayData]);
 
   useEffect(() => {
-    if (quotationData) {
+    if (displayData) {
       if (isAdminView) localStorage.setItem('activeTheme', activeTheme);
       document.body.className = 'theme-nova';
     }
-  }, [activeTheme, quotationData, isAdminView]);
+  }, [activeTheme, displayData, isAdminView]);
 
   const handleSectionSelect = useCallback((sectionId) => {
     setActiveSection(sectionId);
@@ -204,14 +206,20 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
     await supabase.from('quotations').update({ sections_config: newConfig }).eq('theme_key', activeTheme);
   };
 
-  if (!quotationData) return null;
+  if (!displayData) return null;
 
-  let menuItems = (quotationData.sections_config || defaultSections).map(section => {
+  let menuItems = (displayData.sections_config || defaultSections).map(section => {
     const cleanCompKey = (section.component || section.id).split('_copy')[0];
+    // Fix for 'ventajas' label potentially being saved as the translation key
+    let displayLabel = section.label;
+    if (section.id === 'ventajas' && (displayLabel === 'sections.ventajas' || !displayLabel)) {
+      displayLabel = t('sections.ventajas');
+    }
+
     return {
       ...section,
       Component: componentMap[cleanCompKey] || componentMap[section.id] || GenericSection,
-      label: section.label || t(`sections.${section.id}`)
+      label: displayLabel || t(`sections.${section.id}`)
     };
   });
 
@@ -226,11 +234,28 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
     menuItems = menuItems.filter(item => !item.adminOnly);
   }
 
+  const handleVideoUrlUpdate = async (newUrl) => {
+    const updatedData = { ...displayData, video_url: newUrl };
+    setThemes(prev => ({
+      ...prev,
+      [activeTheme]: updatedData
+    }));
+
+    const { error } = await supabase
+      .from('quotations')
+      .update({ video_url: newUrl })
+      .eq('theme_key', activeTheme);
+
+    if (error) {
+      toast({ title: "Error", description: "No se pudo guardar la URL del video.", variant: "destructive" });
+    }
+  };
+
   const renderActiveComponent = () => {
     if (activeSection === 'cotizador_page') {
       return (
         <CotizadorPage
-          quotationData={quotationData}
+          quotationData={displayData}
           activeTheme={activeTheme}
           setThemes={setThemes}
         />
@@ -244,15 +269,16 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
       <MainContent
         activeSection={activeSection}
         setActiveSection={setActiveSection}
-        quotationData={quotationData}
+        quotationData={displayData}
         aiQuery={aiQuery}
         setAiQuery={setAiQuery}
         sections={menuItems}
-        allSectionsData={quotationData.sections_config} // Pass full config including hidden items
+        allSectionsData={displayData.sections_config} // Pass full config including hidden items
         isEditorMode={isEditorMode && isAdminView}
         setIsEditorMode={setIsEditorMode}
         activeTheme={activeTheme}
         onSectionContentUpdate={setSectionsConfig}
+        onVideoUrlUpdate={handleVideoUrlUpdate}
       />
     );
   };
@@ -260,12 +286,37 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
   return (
     <>
       <Helmet>
-        <title>{quotationData.company} - {quotationData.project}</title>
+        <title>{displayData.company} - {displayData.project}</title>
       </Helmet>
       {isAdminView && showPasswordPrompt && (
         <PasswordPrompt
           onCorrectPassword={() => { setIsAdminAuthenticated(true); setShowPasswordPrompt(false); }}
           onCancel={() => setShowPasswordPrompt(false)}
+        />
+      )}
+      {isAdminView && (
+        <AdminModal
+          isOpen={showAdminModal}
+          onClose={() => { setShowAdminModal(false); setPreviewData(null); }}
+          themes={themes}
+          setThemes={setThemes}
+          activeTheme={activeTheme}
+          setActiveTheme={setActiveTheme}
+          onCloneClick={() => { setShowAdminModal(false); setShowCloneModal(true); }}
+          onPreviewUpdate={setPreviewData}
+        />
+      )}
+      {isAdminView && (
+        <CloneModal
+          isOpen={showCloneModal}
+          onClose={() => setShowCloneModal(false)}
+          themes={themes}
+          setThemes={setThemes}
+          onCloneSuccess={(newThemeKey) => {
+            setActiveTheme(newThemeKey);
+            setShowCloneModal(false);
+            toast({ title: "¡Clonado exitoso! 🚀", description: "La cotización ha sido duplicada correctamente." });
+          }}
         />
       )}
       <div className="flex h-screen overflow-hidden bg-black">
@@ -290,7 +341,7 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
         </div>
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header
-            quotationData={quotationData}
+            quotationData={displayData}
             onLogoClick={handleHomeClick}
             onSearchClick={() => isAdminView && setShowCommandDialog(true)}
             isBannerVisible={isBannerVisible}
