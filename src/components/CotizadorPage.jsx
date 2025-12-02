@@ -295,17 +295,17 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           <div className="lg:col-span-3 space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="space-y-2"><Label htmlFor="costo_maquina">Costo Máquina (USD)</Label><Input type="text" id="costo_maquina" name="costo_maquina" value={displayConfig.costo_maquina || ''} onChange={handleInputChange} onFocus={handleFocus} /></div>
-              <div className="space-y-2"><Label htmlFor="incoterm">Incoterm</Label><Input id="incoterm" name="incoterm" value={costConfig.incoterm || ''} onChange={handleInputChange} onFocus={handleFocus} /></div>
-              <div className="space-y-2"><Label htmlFor="costo_terrestre_china">Costo Terrestre China (USD)</Label><Input type="text" id="costo_terrestre_china" name="costo_terrestre_china" value={displayConfig.costo_terrestre_china || ''} onChange={handleInputChange} onFocus={handleFocus} /></div>
-              <div className="space-y-2"><Label htmlFor="maritimo">Marítimo (USD)</Label><Input type="text" id="maritimo" name="maritimo" value={displayConfig.maritimo || ''} onChange={handleInputChange} onFocus={handleFocus} /></div>
-              <div className="space-y-2"><Label htmlFor="terrestre_nacional">Terrestre Nacional (USD)</Label><Input type="text" id="terrestre_nacional" name="terrestre_nacional" value={displayConfig.terrestre_nacional || ''} onChange={handleInputChange} onFocus={handleFocus} /></div>
-              <div className="space-y-2"><Label htmlFor="instalacion">Instalación (USD)</Label><Input type="text" id="instalacion" name="instalacion" value={displayConfig.instalacion || ''} onChange={handleInputChange} onFocus={handleFocus} /></div>
+              <div className="space-y-2"><Label htmlFor="costo_maquina" className="text-[#2563eb] font-semibold">Costo Máquina (USD)</Label><Input type="text" id="costo_maquina" name="costo_maquina" value={displayConfig.costo_maquina || ''} onChange={handleInputChange} onFocus={handleFocus} /></div>
+              <div className="space-y-2"><Label htmlFor="incoterm" className="text-[#2563eb] font-semibold">Incoterm</Label><Input id="incoterm" name="incoterm" value={costConfig.incoterm || ''} onChange={handleInputChange} onFocus={handleFocus} /></div>
+              <div className="space-y-2"><Label htmlFor="costo_terrestre_china" className="text-[#2563eb] font-semibold">Costo Terrestre China (USD)</Label><Input type="text" id="costo_terrestre_china" name="costo_terrestre_china" value={displayConfig.costo_terrestre_china || ''} onChange={handleInputChange} onFocus={handleFocus} /></div>
+              <div className="space-y-2"><Label htmlFor="maritimo" className="text-[#2563eb] font-semibold">Marítimo (USD)</Label><Input type="text" id="maritimo" name="maritimo" value={displayConfig.maritimo || ''} onChange={handleInputChange} onFocus={handleFocus} /></div>
+              <div className="space-y-2"><Label htmlFor="terrestre_nacional" className="text-[#2563eb] font-semibold">Terrestre Nacional (USD)</Label><Input type="text" id="terrestre_nacional" name="terrestre_nacional" value={displayConfig.terrestre_nacional || ''} onChange={handleInputChange} onFocus={handleFocus} /></div>
+              <div className="space-y-2"><Label htmlFor="instalacion" className="text-[#2563eb] font-semibold">Instalación (USD)</Label><Input type="text" id="instalacion" name="instalacion" value={displayConfig.instalacion || ''} onChange={handleInputChange} onFocus={handleFocus} /></div>
             </div>
 
             <div className="space-y-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
               <div className='flex justify-between items-center'>
-                <Label className="text-gray-300 flex items-center gap-2"><PackagePlus size={16} /> Opcionales</Label>
+                <Label className="text-[#2563eb] font-semibold flex items-center gap-2"><PackagePlus size={16} /> Opcionales</Label>
                 <Button variant="outline" size="sm" onClick={addOptional} className="border-gray-700 hover:bg-gray-800"><PlusCircle className="h-4 w-4 mr-2" />Agregar</Button>
               </div>
               <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
@@ -372,11 +372,11 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-3 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-                <Label htmlFor="impuestos_percent" className="text-gray-300">Impuestos de Importación</Label>
+                <Label htmlFor="impuestos_percent" className="text-[#2563eb] font-semibold">Impuestos de Importación</Label>
                 <div className="relative"><Input type="text" id="impuestos_percent" name="impuestos_percent" value={displayConfig.impuestos_percent || ''} onChange={handleInputChange} onFocus={handleFocus} /><div className="absolute inset-y-0 right-3 flex items-center text-gray-400">%</div></div>
               </div>
               <div className="space-y-3 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-                <Label htmlFor="tipo_cambio" className="text-gray-300">Tipo de Cambio (USD a MXN)</Label>
+                <Label htmlFor="tipo_cambio" className="text-[#2563eb] font-semibold">Tipo de Cambio (USD a MXN)</Label>
                 <div className="relative"><Input type="text" id="tipo_cambio" name="tipo_cambio" value={costConfig.tipo_cambio || ''} onChange={handleInputChange} onFocus={handleFocus} /><div className="absolute inset-y-0 right-3 flex items-center text-gray-400">MXN</div></div>
               </div>
             </div>

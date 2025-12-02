@@ -46,7 +46,7 @@ const CalculationInput = ({
       default:
         break;
     }
-    
+
     // Round to 2 decimal places for cleaner inputs
     const roundedNewValue = Math.round(newInputValue * 100) / 100;
 
@@ -77,10 +77,10 @@ const CalculationInput = ({
     if (config.type === 'mxn') return 'MXN';
     return '';
   };
-  
+
   return (
     <div className="space-y-3 p-4 bg-gray-900/50 rounded-lg">
-      <Label htmlFor={id} className="text-gray-300">{label}</Label>
+      <Label htmlFor={id} className="text-[#2563eb] font-semibold">{label}</Label>
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <div className="flex-1 w-full relative">
           <Input
