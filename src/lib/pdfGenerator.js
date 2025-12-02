@@ -161,9 +161,34 @@ export const generateCotizadorPDF = async (pdfData) => {
 
   if (costConfig.optionals && costConfig.optionals.length > 0) {
     cursorY = addSectionTitle('Opcionales', cursorY);
-    const opcionalesBody = costConfig.optionals.map(opt => [opt.name, formatCurrency(Number(opt.cost) || 0)]);
-    opcionalesBody.push([{ content: 'Total Opcionales', styles: { fillColor: alternateRowColor, fontStyle: 'bold' } }, { content: formatCurrency(totalOpcionales), styles: { fillColor: alternateRowColor, fontStyle: 'bold' } }]);
-    doc.autoTable({ head: [['Descripción', 'Costo (USD)']], body: opcionalesBody, startY: cursorY, ...tableStyles({ left: margin, right: margin }) });
+    const opcionalesBody = costConfig.optionals.map(opt => {
+      const cost = Number(opt.cost) || 0;
+      const factor = Number(opt.factor) || 1.6;
+      const sellingPrice = cost * factor;
+      return [opt.name, formatCurrency(cost), formatCurrency(sellingPrice)];
+    });
+
+    // Calculate totals
+    const totalCost = costConfig.optionals.reduce((sum, opt) => sum + (Number(opt.cost) || 0), 0);
+    const totalSellingPrice = costConfig.optionals.reduce((sum, opt) => sum + ((Number(opt.cost) || 0) * (Number(opt.factor) || 1.6)), 0);
+
+    opcionalesBody.push([
+      { content: 'Total Opcionales', styles: { fillColor: alternateRowColor, fontStyle: 'bold' } },
+      { content: formatCurrency(totalCost), styles: { fillColor: alternateRowColor, fontStyle: 'bold' } },
+      { content: formatCurrency(totalSellingPrice), styles: { fillColor: alternateRowColor, fontStyle: 'bold' } }
+    ]);
+
+    doc.autoTable({
+      head: [['Descripción', 'Costo (USD)', 'Precio Venta (USD)']],
+      body: opcionalesBody,
+      startY: cursorY,
+      ...tableStyles({ left: margin, right: margin }),
+      columnStyles: {
+        0: { fontStyle: 'bold' },
+        1: { halign: 'right' },
+        2: { halign: 'right' },
+      },
+    });
     cursorY = doc.autoTable.previous.finalY + 15;
   }
 

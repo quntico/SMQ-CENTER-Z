@@ -46,6 +46,7 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
       const optionalsWithState = (quotationData.cost_config.optionals || []).map(opt => ({
         ...opt,
         isEnabled: opt.isEnabled !== undefined ? opt.isEnabled : true, // Default to true if not set
+        factor: opt.factor !== undefined ? opt.factor : 1.6, // Default factor
       }));
 
       initialConfig = {
@@ -163,7 +164,7 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
   };
 
   const addOptional = () => {
-    const newOptional = { id: Date.now(), name: '', cost: 0, isEnabled: true };
+    const newOptional = { id: Date.now(), name: '', cost: 0, isEnabled: true, factor: 1.6 };
     setCostConfig(prev => ({ ...prev, optionals: [...(prev.optionals || []), newOptional] }));
   };
 
@@ -333,6 +334,19 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
                         disabled={!opt.isEnabled}
                       />
                       <span className="absolute inset-y-0 right-3 flex items-center text-xs text-gray-400">USD</span>
+                    </div>
+                    <div className="relative w-24">
+                      <Input
+                        type="number"
+                        placeholder="Factor"
+                        value={opt.factor}
+                        onChange={e => updateOptional(opt.id, 'factor', parseFloat(e.target.value) || 0)}
+                        onFocus={handleFocus}
+                        className="pr-1"
+                        disabled={!opt.isEnabled}
+                        step="0.1"
+                      />
+                      <span className="absolute inset-y-0 right-8 flex items-center text-xs text-gray-400 pointer-events-none">x</span>
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => removeOptional(opt.id)} className="text-red-500 hover:bg-red-500/10 hover:text-red-400"><Trash2 size={16} /></Button>
                   </div>
