@@ -324,6 +324,7 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
           onClose={() => setShowCloneModal(false)}
           themes={themes}
           setThemes={setThemes}
+          activeTheme={activeTheme}
           onCloneSuccess={(newThemeKey) => {
             setActiveTheme(newThemeKey);
             setShowCloneModal(false);

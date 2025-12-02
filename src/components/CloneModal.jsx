@@ -20,7 +20,7 @@ const slugify = (text) => {
     .replace(/--+/g, '-');
 };
 
-const CloneModal = ({ isOpen, onClose, themes, setThemes, setActiveTheme }) => {
+const CloneModal = ({ isOpen, onClose, themes, setThemes, setActiveTheme, activeTheme }) => {
   const [clientName, setClientName] = useState('');
   const [projectName, setProjectName] = useState('');
   const [isCloning, setIsCloning] = useState(false);
@@ -29,20 +29,16 @@ const CloneModal = ({ isOpen, onClose, themes, setThemes, setActiveTheme }) => {
 
   useEffect(() => {
     if (isOpen) {
-      const template = Object.values(themes).find(theme => theme.is_template);
-      if (template) {
-        setSourceThemeData(template);
+      if (activeTheme && themes[activeTheme]) {
+        // Clone from the currently active theme
+        setSourceThemeData(themes[activeTheme]);
       } else {
-        toast({
-          title: "Plantilla no encontrada",
-          description: "No se encontró la cotización 'Plastiteja - Plantilla Base'. La clonación podría no funcionar como se espera.",
-          variant: "destructive",
-        });
-        // Fallback to another theme if template not found
-        setSourceThemeData(Object.values(themes)[0]);
+        // Fallback to template if no active theme (shouldn't happen in normal flow)
+        const template = Object.values(themes).find(theme => theme.is_template);
+        setSourceThemeData(template || Object.values(themes)[0]);
       }
     }
-  }, [isOpen, themes, toast]);
+  }, [isOpen, themes, activeTheme]);
 
   const handleClone = async () => {
     if (!clientName || !projectName) {
@@ -53,7 +49,7 @@ const CloneModal = ({ isOpen, onClose, themes, setThemes, setActiveTheme }) => {
       });
       return;
     }
-    
+
     if (!sourceThemeData) {
       toast({
         title: "Error de Clonación",
@@ -80,13 +76,13 @@ const CloneModal = ({ isOpen, onClose, themes, setThemes, setActiveTheme }) => {
         const isSlugDuplicate = existing.some(e => e.slug === newSlug);
         let errorMessage = "Ya existe una cotización con datos similares.";
         if (isThemeKeyDuplicate && isSlugDuplicate) {
-            errorMessage = "Ya existen una cotización con la misma clave y slug. Por favor, elige un nombre de cliente o proyecto diferente.";
+          errorMessage = "Ya existen una cotización con la misma clave y slug. Por favor, elige un nombre de cliente o proyecto diferente.";
         } else if (isThemeKeyDuplicate) {
-            errorMessage = "Ya existe una cotización con una clave similar. Por favor, elige un nombre de cliente o proyecto diferente.";
+          errorMessage = "Ya existe una cotización con una clave similar. Por favor, elige un nombre de cliente o proyecto diferente.";
         } else if (isSlugDuplicate) {
-            errorMessage = "Ya existe una cotización con un slug similar (URL pública). Por favor, elige un nombre de proyecto diferente.";
+          errorMessage = "Ya existe una cotización con un slug similar (URL pública). Por favor, elige un nombre de proyecto diferente.";
         }
-        
+
         toast({
           title: "Error: Cotización ya existe",
           description: errorMessage,
@@ -104,7 +100,7 @@ const CloneModal = ({ isOpen, onClose, themes, setThemes, setActiveTheme }) => {
         slug: newSlug,
         is_template: false, // Cloned quotations are not templates
       };
-      
+
       delete newQuotationData.id;
       delete newQuotationData.bannerScale;
       newQuotationData.created_at = new Date().toISOString();
