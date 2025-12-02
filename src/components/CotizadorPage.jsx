@@ -10,6 +10,8 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { generateCotizadorPDF } from '@/lib/pdfGenerator';
 import CalculationInput from '@/components/CalculationInput';
 import MachineFactorCard from '@/components/MachineFactorCard';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Eye, EyeOff } from 'lucide-react';
 
 const formatCurrency = (value, currency = 'USD') => {
   if (typeof value !== 'number' || isNaN(value)) return currency === 'USD' ? '$0.00' : '$0.00 MXN';
@@ -38,7 +40,12 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
   const [displayConfig, setDisplayConfig] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [viewMode, setViewMode] = useState('cost');
   const { toast } = useToast();
+
+  const toggleViewMode = () => {
+    setViewMode(prev => prev === 'cost' ? 'price' : 'cost');
+  };
 
   useEffect(() => {
     let initialConfig;
@@ -310,21 +317,8 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
             </div>
 
             <div className="space-y-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
-              import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
-              import {Eye, EyeOff} from 'lucide-react';
 
-              // ... existing imports
 
-              // Inside CotizadorPage component
-              const [viewMode, setViewMode] = useState('cost'); // 'cost' | 'price'
-
-// ... existing code
-
-  const toggleViewMode = () => {
-                setViewMode(prev => prev === 'cost' ? 'price' : 'cost');
-  };
-
-              // ... inside the render loop for optionals
 
               <div className='flex justify-between items-center'>
                 <Label className="text-[#2563eb] font-semibold flex items-center gap-2"><PackagePlus size={16} /> Opcionales</Label>
