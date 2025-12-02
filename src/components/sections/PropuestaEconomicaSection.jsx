@@ -266,13 +266,24 @@ const PropuestaEconomicaSection = ({
   }));
 
   // Sync state when props change (external updates)
+  // Sync state when props change (external updates)
   useEffect(() => {
-    setContent(prev => ({
-      ...prev,
-      ...DEFAULT_CONTENT,
-      ...(sectionData.content || {}),
-      exchangeRate: sectionData.content?.exchangeRate ?? DEFAULT_CONTENT.exchangeRate
-    }));
+    if (sectionData.content && sectionData.content.groups && sectionData.content.groups.length > 0) {
+      // If we have saved groups, use them directly and DO NOT merge with defaults for groups
+      // This prevents deleted items from reappearing if they exist in defaults
+      setContent(prev => ({
+        ...prev,
+        ...sectionData.content
+      }));
+    } else {
+      // Only fall back to defaults if no saved content exists
+      setContent(prev => ({
+        ...prev,
+        ...DEFAULT_CONTENT,
+        ...(sectionData.content || {}),
+        exchangeRate: sectionData.content?.exchangeRate ?? DEFAULT_CONTENT.exchangeRate
+      }));
+    }
   }, [sectionData.content]);
 
   const activeItems = content.groups.flatMap(g => g.items).filter(i => i.isActive);
@@ -308,10 +319,18 @@ const PropuestaEconomicaSection = ({
     const destGroupIndex = newGroups.findIndex(g => g.id === destination.droppableId);
     if (sourceGroupIndex === -1 || destGroupIndex === -1) return;
 
-    const sourceGroup = newGroups[sourceGroupIndex];
-    const destGroup = newGroups[destGroupIndex];
+    const sourceGroup = { ...newGroups[sourceGroupIndex] };
+    const destGroup = { ...newGroups[destGroupIndex] };
+
+    // Create new items arrays to avoid mutating state/defaults
+    sourceGroup.items = [...sourceGroup.items];
+    destGroup.items = [...destGroup.items];
+
     const [movedItem] = sourceGroup.items.splice(source.index, 1);
     destGroup.items.splice(destination.index, 0, movedItem);
+
+    newGroups[sourceGroupIndex] = sourceGroup;
+    newGroups[destGroupIndex] = destGroup;
 
     updateContent({ ...content, groups: newGroups });
   };
