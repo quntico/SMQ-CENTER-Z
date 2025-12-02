@@ -122,6 +122,9 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
     const neto = precio_venta_final + iva;
     const factor = costo_final_operacion > 0 ? precio_venta_final / costo_final_operacion : 0;
 
+    const total_opcionales_venta = activeOptionals.reduce((sum, opt) => sum + ((Number(opt.cost) || 0) * (Number(opt.factor) || 1.6)), 0);
+    const precio_venta_maquina = precio_venta_final - total_opcionales_venta;
+
     const subtotalsForPdf = {
       costoMaquina: costo_maquina,
       totalOpcionales: total_opcionales,
@@ -133,6 +136,8 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
 
     return {
       total_opcionales,
+      total_opcionales_venta,
+      precio_venta_maquina,
       costo_final_maquina,
       incrementables,
       impuestos,
@@ -348,6 +353,9 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
                       />
                       <span className="absolute inset-y-0 right-8 flex items-center text-xs text-gray-400 pointer-events-none">x</span>
                     </div>
+                    <div className="w-24 text-right text-xs font-mono text-green-400">
+                      {formatCurrency((Number(opt.cost) || 0) * (Number(opt.factor) || 1.6))}
+                    </div>
                     <Button variant="ghost" size="icon" onClick={() => removeOptional(opt.id)} className="text-red-500 hover:bg-red-500/10 hover:text-red-400"><Trash2 size={16} /></Button>
                   </div>
                 ))}
@@ -432,6 +440,23 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
                     <span className="text-lg font-bold text-[#2563eb] flex items-center gap-2"><TrendingUp size={20} />Factor</span>
                     <p className="font-mono text-xl font-bold text-[#2563eb]">{calculatedCosts.factor.toFixed(2)}</p>
                   </div>
+
+                  {/* New Breakdown Section */}
+                  <div className="mt-6 pt-4 border-t border-gray-700">
+                    <h3 className="text-sm font-bold text-white mb-3">Desglose de Precios de Venta</h3>
+                    <div className="space-y-1 pl-2 border-l-2 border-[#2563eb]/30">
+                      <SummaryRow label="Máquina (con gastos)" valueUsd={calculatedCosts.precio_venta_maquina} isSubtle />
+                      {(costConfig.optionals || []).filter(opt => opt.isEnabled).map(opt => (
+                        <SummaryRow
+                          key={opt.id}
+                          label={opt.name || 'Opcional'}
+                          valueUsd={(Number(opt.cost) || 0) * (Number(opt.factor) || 1.6)}
+                          isSubtle
+                        />
+                      ))}
+                    </div>
+                  </div>
+
                 </div>
               </div>
             </div>
