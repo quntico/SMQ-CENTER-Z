@@ -796,7 +796,7 @@ const PropuestaEconomicaSection = ({
                                         <div className="space-y-0.5">
                                           <div className="flex items-center gap-2">
                                             <span className="text-blue-500 font-bold text-sm">{index + 1}.</span>
-                                            <span className="font-bold text-sm text-white uppercase">{item.title}</span>
+                                            <span className={cn("font-bold text-sm uppercase transition-colors", item.isActive ? "text-yellow-500" : "text-white")}>{item.title}</span>
                                           </div>
                                           <p className="text-gray-400 text-xs">{item.subtitle}</p>
                                         </div>
