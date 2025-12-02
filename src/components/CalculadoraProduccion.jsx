@@ -8,15 +8,76 @@ import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import ResultadosClave from '@/components/ResultadosClave';
 import AnalisisRentabilidad from '@/components/AnalisisRentabilidad';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const sectionData = {
-    id: 'calculadora_prod',
-    label: 'Calculadora de Producción',
-    icon: 'Calculator',
-    description: 'Estima la producción, costos y rentabilidad de tu línea de producción de tejas.'
+  id: 'calculadora_prod',
+  label: 'Calculadora de Producción',
+  icon: 'Calculator',
+  description: 'Estima la producción, costos y rentabilidad de tu línea.'
 };
 
-const defaultInitialValues = {
+// --- Shared Components ---
+
+const ParametroItem = ({ label, value, onValueChange, unit, step, min, max, isSlider = false, className = "" }) => {
+  const [inputValue, setInputValue] = useState(value?.toString() || "0");
+
+  useEffect(() => {
+    if (parseFloat(inputValue) !== value) {
+      setInputValue(value?.toString() || "0");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  const handleInputChange = (e) => {
+    setInputValue(e.target.value);
+  };
+
+  const handleBlur = () => {
+    let numValue = parseFloat(inputValue);
+    if (isNaN(numValue) || inputValue.trim() === '') {
+      setInputValue(value?.toString() || "0");
+    } else {
+      onValueChange(numValue);
+    }
+  };
+
+  return (
+    <div className={`bg-gray-900/50 p-4 rounded-lg border border-gray-800 ${className}`}>
+      <div className="flex justify-between items-center mb-2">
+        <label className="text-sm font-medium text-gray-300">{label}</label>
+        <div className="flex items-center gap-2">
+          <Input
+            type="number"
+            value={inputValue}
+            onChange={handleInputChange}
+            onBlur={handleBlur}
+            onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+            className="w-24 h-8 text-right bg-black border-gray-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            step={step}
+            min={min}
+            max={max}
+          />
+          <span className="text-sm text-gray-500 w-8">{unit}</span>
+        </div>
+      </div>
+      {isSlider && (
+        <Slider
+          value={[value || 0]}
+          onValueChange={(val) => onValueChange(val[0])}
+          max={max}
+          min={min}
+          step={step}
+        />
+      )}
+    </div>
+  );
+};
+
+// --- Tejas Calculator (Original) ---
+
+const defaultTejasValues = {
   ancho_teja: 900,
   largo_teja: 1000,
   peso_teja: 4500,
@@ -30,109 +91,23 @@ const defaultInitialValues = {
   precio_venta: 300,
 };
 
-const ParametroItem = ({ label, value, onValueChange, unit, step, min, max, isSlider = false }) => {
-  const [inputValue, setInputValue] = useState(value.toString());
-
-  useEffect(() => {
-    if (parseFloat(inputValue) !== value) {
-      setInputValue(value.toString());
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
-
-  const handleInputChange = (e) => {
-    setInputValue(e.target.value);
-  };
-
-  const handleBlur = () => {
-    let numValue = parseFloat(inputValue);
-    if (isNaN(numValue) || inputValue.trim() === '') {
-      setInputValue(value.toString());
-    } else {
-      onValueChange(numValue);
-    }
-  };
-
-  return (
-    <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
-      <div className="flex justify-between items-center mb-2">
-        <label className="text-sm font-medium text-gray-300">{label}</label>
-        <div className="flex items-center gap-2">
-          <Input 
-            type="number"
-            value={inputValue}
-            onChange={handleInputChange}
-            onBlur={handleBlur}
-            onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
-            className="w-28 h-8 text-right bg-black border-gray-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            step={step}
-            min={min}
-            max={max}
-          />
-          <span className="text-sm text-gray-500">{unit}</span>
-        </div>
-      </div>
-      {isSlider && (
-        <Slider
-          value={[value]}
-          onValueChange={(val) => onValueChange(val[0])}
-          max={max}
-          min={min}
-          step={step}
-        />
-      )}
-    </div>
-  );
-};
-
-const CalculadoraProduccion = ({ quotationData, isEditorMode, activeTheme }) => {
-  const { toast } = useToast();
-  const [values, setValues] = useState(defaultInitialValues);
+const TejasCalculator = ({ config, onUpdate, isEditorMode, onSave, quotationData }) => {
+  const [values, setValues] = useState({ ...defaultTejasValues, ...config });
   const [results, setResults] = useState({});
   const [rentabilidad, setRentabilidad] = useState({});
 
   useEffect(() => {
-    const config = quotationData.calculator_config;
-    if (config) {
-      setValues({
-        ancho_teja: config.ancho_teja || defaultInitialValues.ancho_teja,
-        largo_teja: config.largo_teja || defaultInitialValues.largo_teja,
-        peso_teja: config.peso_teja || defaultInitialValues.peso_teja,
-        capacidad_produccion: config.capacidad_produccion || defaultInitialValues.capacidad_produccion,
-        eficiencia_linea: config.eficiencia_linea || defaultInitialValues.eficiencia_linea,
-        horas_operacion: config.horas_operacion || defaultInitialValues.horas_operacion,
-        dias_operacion: config.dias_operacion || defaultInitialValues.dias_operacion,
-        costo_mp: config.costo_mp || defaultInitialValues.costo_mp,
-        costo_empaque: config.costo_empaque || defaultInitialValues.costo_empaque,
-        costo_operativo: config.costo_operativo || defaultInitialValues.costo_operativo,
-        precio_venta: config.precio_venta || defaultInitialValues.precio_venta,
-      });
-    } else {
-        setValues(defaultInitialValues);
-    }
-  }, [quotationData.calculator_config]);
-  
-  const handleSave = async () => {
-    const { error } = await supabase
-      .from('quotations')
-      .update({ calculator_config: values })
-      .eq('theme_key', activeTheme);
+    setValues({ ...defaultTejasValues, ...config });
+  }, [config]);
 
-    if (error) {
-      toast({ title: "Error", description: "No se pudieron guardar los parámetros.", variant: "destructive" });
-    } else {
-      toast({ title: "Guardado", description: "Parámetros de la calculadora guardados." });
-    }
-  };
-  
   useEffect(() => {
-    // Cálculos de Producción
+    onUpdate(values);
+
+    // Cálculos
     const peso_teja_kg = values.peso_teja / 1000;
     const capacidad_kg_h_real = values.capacidad_produccion * (values.eficiencia_linea / 100);
-    
     const tejas_por_hora = peso_teja_kg > 0 ? capacidad_kg_h_real / peso_teja_kg : 0;
     const tejas_por_min_real = tejas_por_hora / 60;
-    
     const produccion_diaria_tejas = tejas_por_hora * values.horas_operacion;
     const produccion_mensual_tejas = produccion_diaria_tejas * values.dias_operacion;
     const produccion_mensual_kg = (produccion_mensual_tejas * peso_teja_kg);
@@ -145,7 +120,6 @@ const CalculadoraProduccion = ({ quotationData, isEditorMode, activeTheme }) => 
       produccion_mensual_kg: Math.round(produccion_mensual_kg),
     });
 
-    // Cálculos de Rentabilidad
     const costo_mp_total = produccion_mensual_tejas * values.costo_mp;
     const costo_empaque_total = produccion_mensual_tejas * values.costo_empaque;
     const costo_operativo_total = values.costo_operativo * values.horas_operacion * values.dias_operacion;
@@ -160,30 +134,367 @@ const CalculadoraProduccion = ({ quotationData, isEditorMode, activeTheme }) => 
       utilidad_bruta,
       margen_bruto,
     });
-  }, [values]);
-
-  const sections = {
-    produccion: [
-      { id: 'ancho_teja', label: 'Ancho de Teja', unit: 'mm', min: 100, max: 1200, step: 10 },
-      { id: 'largo_teja', label: 'Largo de Teja', unit: 'mm', min: 200, max: 2000, step: 10 },
-      { id: 'peso_teja', label: 'Peso por Teja', unit: 'gr', min: 1000, max: 10000, step: 100 },
-      { id: 'capacidad_produccion', label: 'Capacidad de Producción', unit: 'kg/h', min: 300, max: 600, step: 10, isSlider: true }, // Rango y step actualizados
-      { id: 'eficiencia_linea', label: 'Eficiencia de Línea', unit: '%', min: 50, max: 100, step: 1, isSlider: true },
-    ],
-    operacion: [
-      { id: 'horas_operacion', label: 'Horas por Turno', unit: 'hrs', min: 1, max: 24, step: 1 },
-      { id: 'dias_operacion', label: 'Días por Mes', unit: 'días', min: 1, max: 31, step: 1 },
-    ],
-    costos: [
-      { id: 'costo_mp', label: 'Costo Materia Prima / teja', unit: 'MXN', min: 1, max: 100, step: 1 },
-      { id: 'costo_empaque', label: 'Costo Empaque / teja', unit: 'MXN', min: 0, max: 50, step: 0.5 },
-      { id: 'costo_operativo', label: 'Costo Operativo / hora', unit: 'MXN', min: 50, max: 1000, step: 10 },
-      { id: 'precio_venta', label: 'Precio de Venta / teja', unit: 'MXN', min: 10, max: 500, step: 1 },
-    ]
-  };
+  }, [values]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateValue = (id, newValue) => {
     setValues(prev => ({ ...prev, [id]: newValue }));
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+      <div className="lg:col-span-1 space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold text-primary mb-3">Parámetros de Producción</h3>
+          <div className="space-y-3">
+            <ParametroItem label="Ancho de Teja" unit="mm" min={100} max={1200} step={10} value={values.ancho_teja} onValueChange={v => updateValue('ancho_teja', v)} />
+            <ParametroItem label="Largo de Teja" unit="mm" min={200} max={2000} step={10} value={values.largo_teja} onValueChange={v => updateValue('largo_teja', v)} />
+            <ParametroItem label="Peso por Teja" unit="gr" min={1000} max={10000} step={100} value={values.peso_teja} onValueChange={v => updateValue('peso_teja', v)} />
+            <ParametroItem label="Capacidad de Producción" unit="kg/h" min={300} max={600} step={10} isSlider value={values.capacidad_produccion} onValueChange={v => updateValue('capacidad_produccion', v)} />
+            <ParametroItem label="Eficiencia de Línea" unit="%" min={50} max={100} step={1} isSlider value={values.eficiencia_linea} onValueChange={v => updateValue('eficiencia_linea', v)} />
+          </div>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-primary mb-3">Parámetros de Operación</h3>
+          <div className="space-y-3">
+            <ParametroItem label="Horas por Turno" unit="hrs" min={1} max={24} step={1} value={values.horas_operacion} onValueChange={v => updateValue('horas_operacion', v)} />
+            <ParametroItem label="Días por Mes" unit="días" min={1} max={31} step={1} value={values.dias_operacion} onValueChange={v => updateValue('dias_operacion', v)} />
+          </div>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-primary mb-3">Parámetros de Costos</h3>
+          <div className="space-y-3">
+            <ParametroItem label="Costo Materia Prima / teja" unit="MXN" min={1} max={100} step={1} value={values.costo_mp} onValueChange={v => updateValue('costo_mp', v)} />
+            <ParametroItem label="Costo Empaque / teja" unit="MXN" min={0} max={50} step={0.5} value={values.costo_empaque} onValueChange={v => updateValue('costo_empaque', v)} />
+            <ParametroItem label="Costo Operativo / hora" unit="MXN" min={50} max={1000} step={10} value={values.costo_operativo} onValueChange={v => updateValue('costo_operativo', v)} />
+            <ParametroItem label="Precio de Venta / teja" unit="MXN" min={10} max={500} step={1} value={values.precio_venta} onValueChange={v => updateValue('precio_venta', v)} />
+          </div>
+        </div>
+        {isEditorMode && (
+          <Button onClick={onSave} className="w-full mt-4">Guardar Parámetros Tejas</Button>
+        )}
+      </div>
+
+      <div className="lg:col-span-2 space-y-8">
+        <ResultadosClave results={results} rentabilidad={rentabilidad} />
+        <div className="bg-black border border-gray-800 rounded-2xl p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold text-white">Análisis de Rentabilidad</h3>
+          </div>
+          <AnalisisRentabilidad rentabilidad={rentabilidad} quotationData={quotationData} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Coextrusion Calculator (New) ---
+
+const defaultCoexValues = {
+  ingredients: [
+    { name: 'Material A', percent: 50, cost: 20 },
+    { name: 'Material B', percent: 30, cost: 15 },
+    { name: 'Material C', percent: 20, cost: 10 },
+    { name: 'Aditivo', percent: 0, cost: 50 },
+  ],
+  width_mm: 1000,
+  thickness_microns: 50,
+  speed_m_min: 80,
+  density: 0.92,
+  power_kw: 150,
+  cost_kwh: 2.5,
+  ops_cost_hr: 200,
+  sales_price_kg: 45,
+  hours_day: 20,
+  days_month: 26,
+};
+
+const CoextrusionCalculator = ({ config, onUpdate, isEditorMode, onSave }) => {
+  const [values, setValues] = useState({ ...defaultCoexValues, ...config });
+
+  // Ensure ingredients array exists if config is partial
+  useEffect(() => {
+    if (!values.ingredients) {
+      setValues(prev => ({ ...prev, ingredients: defaultCoexValues.ingredients }));
+    }
+  }, [values.ingredients]);
+
+  const [metrics, setMetrics] = useState({
+    mixtureCost: 0,
+    outputKgH: 0,
+    dailyProdKg: 0,
+    monthlyProdKg: 0,
+    dailyEnergyKwh: 0,
+    dailyEnergyCost: 0,
+    grossProfitMonthly: 0,
+    marginPercent: 0,
+  });
+
+  useEffect(() => {
+    onUpdate(values);
+
+    // 1. Mixture Cost
+    let totalPercent = 0;
+    let weightedCost = 0;
+    values.ingredients?.forEach(ing => {
+      totalPercent += ing.percent;
+      weightedCost += (ing.percent / 100) * ing.cost;
+    });
+    // Normalize if not 100%? For now, just use weighted sum. If sum < 100, it assumes rest is free or error. 
+    // Let's assume user inputs sum to 100.
+
+    // 2. Production Output (Kg/h)
+    // Formula: Width(m) * Thickness(m) * Speed(m/min) * 60 * Density(kg/m3)
+    const width_m = values.width_mm / 1000;
+    const thick_m = values.thickness_microns / 1000000;
+    const density_kg_m3 = values.density * 1000;
+    const outputKgH = width_m * thick_m * values.speed_m_min * 60 * density_kg_m3;
+
+    const dailyProdKg = outputKgH * values.hours_day;
+    const monthlyProdKg = dailyProdKg * values.days_month;
+
+    // 3. Energy
+    const dailyEnergyKwh = values.power_kw * values.hours_day;
+    const dailyEnergyCost = dailyEnergyKwh * values.cost_kwh;
+
+    // 4. Profitability
+    const totalOpsCostMonthly = values.ops_cost_hr * values.hours_day * values.days_month;
+    const totalMatCostMonthly = monthlyProdKg * weightedCost;
+    const totalEnergyCostMonthly = dailyEnergyCost * values.days_month;
+
+    const totalCostMonthly = totalMatCostMonthly + totalOpsCostMonthly + totalEnergyCostMonthly;
+    const totalRevenueMonthly = monthlyProdKg * values.sales_price_kg;
+
+    const grossProfitMonthly = totalRevenueMonthly - totalCostMonthly;
+    const marginPercent = totalRevenueMonthly > 0 ? (grossProfitMonthly / totalRevenueMonthly) * 100 : 0;
+
+    setMetrics({
+      mixtureCost: weightedCost,
+      outputKgH,
+      dailyProdKg,
+      monthlyProdKg,
+      dailyEnergyKwh,
+      dailyEnergyCost,
+      grossProfitMonthly,
+      marginPercent,
+    });
+  }, [values]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const updateVal = (key, val) => setValues(prev => ({ ...prev, [key]: val }));
+
+  const updateIngredient = (idx, field, val) => {
+    const newIngs = [...values.ingredients];
+    newIngs[idx] = { ...newIngs[idx], [field]: val };
+    setValues(prev => ({ ...prev, ingredients: newIngs }));
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8">
+      {/* Left Column: Inputs (4 cols) */}
+      <div className="lg:col-span-5 space-y-6">
+
+        {/* Mixture Formulator */}
+        <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-800">
+          <h3 className="text-md font-bold text-blue-400 mb-3 flex justify-between">
+            <span>Formulación de Mezcla</span>
+            <span className="text-white">${metrics.mixtureCost.toFixed(2)} / kg</span>
+          </h3>
+          <Table>
+            <TableHeader>
+              <TableRow className="border-gray-800 hover:bg-transparent">
+                <TableHead className="h-8 text-xs text-gray-500">Material</TableHead>
+                <TableHead className="h-8 text-xs text-gray-500 text-right">%</TableHead>
+                <TableHead className="h-8 text-xs text-gray-500 text-right">$/kg</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {values.ingredients?.map((ing, i) => (
+                <TableRow key={i} className="border-gray-800 hover:bg-transparent">
+                  <TableCell className="p-1">
+                    <Input
+                      value={ing.name}
+                      onChange={e => updateIngredient(i, 'name', e.target.value)}
+                      className="h-7 text-xs bg-black border-gray-700"
+                    />
+                  </TableCell>
+                  <TableCell className="p-1">
+                    <Input
+                      type="number"
+                      value={ing.percent}
+                      onChange={e => updateIngredient(i, 'percent', parseFloat(e.target.value) || 0)}
+                      className="h-7 text-xs text-right bg-black border-gray-700"
+                    />
+                  </TableCell>
+                  <TableCell className="p-1">
+                    <Input
+                      type="number"
+                      value={ing.cost}
+                      onChange={e => updateIngredient(i, 'cost', parseFloat(e.target.value) || 0)}
+                      className="h-7 text-xs text-right bg-black border-gray-700"
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Machine Params */}
+        <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-800">
+          <h3 className="text-md font-bold text-green-400 mb-3">Parámetros de Máquina</h3>
+          <div className="space-y-2">
+            <ParametroItem label="Ancho (mm)" value={values.width_mm} onValueChange={v => updateVal('width_mm', v)} unit="mm" min={100} max={3000} step={10} />
+            <ParametroItem label="Espesor (micras)" value={values.thickness_microns} onValueChange={v => updateVal('thickness_microns', v)} unit="µm" min={10} max={500} step={1} />
+            <ParametroItem label="Velocidad (m/min)" value={values.speed_m_min} onValueChange={v => updateVal('speed_m_min', v)} unit="m/min" min={1} max={300} step={1} />
+            <ParametroItem label="Densidad (g/cm³)" value={values.density} onValueChange={v => updateVal('density', v)} unit="g/cm³" min={0.5} max={2.0} step={0.01} />
+          </div>
+        </div>
+
+        {/* Energy & Ops */}
+        <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-800">
+          <h3 className="text-md font-bold text-yellow-400 mb-3">Energía y Operación</h3>
+          <div className="space-y-2">
+            <ParametroItem label="Consumo (kW)" value={values.power_kw} onValueChange={v => updateVal('power_kw', v)} unit="kW" min={0} max={1000} step={5} />
+            <ParametroItem label="Costo Luz ($/kWh)" value={values.cost_kwh} onValueChange={v => updateVal('cost_kwh', v)} unit="$" min={0} max={10} step={0.1} />
+            <ParametroItem label="Costo Op. ($/hr)" value={values.ops_cost_hr} onValueChange={v => updateVal('ops_cost_hr', v)} unit="$" min={0} max={5000} step={10} />
+            <ParametroItem label="Horas/Día" value={values.hours_day} onValueChange={v => updateVal('hours_day', v)} unit="h" min={1} max={24} step={1} />
+          </div>
+        </div>
+
+        {isEditorMode && (
+          <Button onClick={onSave} className="w-full mt-4 bg-blue-600 hover:bg-blue-700">Guardar Configuración Coextrusión</Button>
+        )}
+      </div>
+
+      {/* Right Column: Results (7 cols) */}
+      <div className="lg:col-span-7 space-y-6">
+        {/* Key Metrics Cards */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-blue-900/20 border border-blue-800 p-4 rounded-xl">
+            <p className="text-sm text-blue-400 uppercase font-bold">Producción Horaria</p>
+            <p className="text-3xl font-black text-white mt-1">{metrics.outputKgH.toFixed(1)} <span className="text-sm font-normal text-gray-400">kg/h</span></p>
+          </div>
+          <div className="bg-green-900/20 border border-green-800 p-4 rounded-xl">
+            <p className="text-sm text-green-400 uppercase font-bold">Producción Mensual</p>
+            <p className="text-3xl font-black text-white mt-1">{(metrics.monthlyProdKg / 1000).toFixed(1)} <span className="text-sm font-normal text-gray-400">Ton</span></p>
+          </div>
+        </div>
+
+        {/* Financial Analysis */}
+        <div className="bg-black border border-gray-800 rounded-2xl p-6">
+          <h3 className="text-xl font-bold text-white mb-6">Análisis Financiero</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <label className="text-sm text-gray-500 block mb-2">Precio de Venta ($/kg)</label>
+              <div className="flex items-center gap-2 mb-6">
+                <span className="text-2xl text-gray-400">$</span>
+                <Input
+                  type="number"
+                  value={values.sales_price_kg}
+                  onChange={e => updateVal('sales_price_kg', parseFloat(e.target.value))}
+                  className="text-3xl font-bold bg-transparent border-none p-0 h-auto focus-visible:ring-0 w-32"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Costo Mezcla</span>
+                  <span className="text-white font-mono">${metrics.mixtureCost.toFixed(2)}/kg</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Costo Energía</span>
+                  <span className="text-white font-mono">${(metrics.dailyEnergyCost / metrics.dailyProdKg || 0).toFixed(2)}/kg</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Costo Operativo</span>
+                  <span className="text-white font-mono">${(values.ops_cost_hr / metrics.outputKgH || 0).toFixed(2)}/kg</span>
+                </div>
+                <div className="h-px bg-gray-800 my-2"></div>
+                <div className="flex justify-between font-bold">
+                  <span className="text-gray-300">Costo Total</span>
+                  <span className="text-red-400 font-mono">${((metrics.mixtureCost + (metrics.dailyEnergyCost / metrics.dailyProdKg || 0) + (values.ops_cost_hr / metrics.outputKgH || 0))).toFixed(2)}/kg</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col justify-center items-center bg-gray-900/30 rounded-xl p-4">
+              <p className="text-gray-400 text-sm uppercase tracking-widest mb-2">Utilidad Bruta Mensual</p>
+              <p className="text-4xl sm:text-5xl font-black text-green-500">
+                ${metrics.grossProfitMonthly.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+              </p>
+              <div className="mt-4 flex items-center gap-2">
+                <span className={`px-3 py-1 rounded-full text-sm font-bold ${metrics.marginPercent > 20 ? 'bg-green-900/50 text-green-400' : 'bg-yellow-900/50 text-yellow-400'}`}>
+                  {metrics.marginPercent.toFixed(1)}% Margen
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Energy Details */}
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="bg-gray-900/30 p-3 rounded-lg">
+            <p className="text-xs text-gray-500">Consumo Diario</p>
+            <p className="text-lg font-bold text-white">{metrics.dailyEnergyKwh.toFixed(0)} kWh</p>
+          </div>
+          <div className="bg-gray-900/30 p-3 rounded-lg">
+            <p className="text-xs text-gray-500">Costo Diario Luz</p>
+            <p className="text-lg font-bold text-white">${metrics.dailyEnergyCost.toFixed(0)}</p>
+          </div>
+          <div className="bg-gray-900/30 p-3 rounded-lg">
+            <p className="text-xs text-gray-500">Costo Mensual Luz</p>
+            <p className="text-lg font-bold text-white">${(metrics.dailyEnergyCost * values.days_month).toLocaleString()}</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
+// --- Main Wrapper ---
+
+const CalculadoraProduccion = ({ quotationData, isEditorMode, activeTheme }) => {
+  const { toast } = useToast();
+
+  // Load initial config
+  const initialConfig = quotationData.calculator_config || {};
+
+  const [activeMode, setActiveMode] = useState(initialConfig.activeMode || 'tejas');
+  const [tejasConfig, setTejasConfig] = useState(initialConfig.tejas || {});
+  const [coexConfig, setCoexConfig] = useState(initialConfig.coextrusion || {});
+
+  // Sync with DB updates
+  useEffect(() => {
+    if (quotationData.calculator_config) {
+      const conf = quotationData.calculator_config;
+      if (conf.activeMode) setActiveMode(conf.activeMode);
+      if (conf.tejas) setTejasConfig(conf.tejas);
+      if (conf.coextrusion) setCoexConfig(conf.coextrusion);
+      // Fallback for legacy data that was just the tejas object
+      if (!conf.activeMode && !conf.tejas && !conf.coextrusion && Object.keys(conf).length > 0) {
+        setTejasConfig(conf);
+      }
+    }
+  }, [quotationData.calculator_config]);
+
+  const handleSave = async () => {
+    const fullConfig = {
+      activeMode,
+      tejas: tejasConfig,
+      coextrusion: coexConfig
+    };
+
+    const { error } = await supabase
+      .from('quotations')
+      .update({ calculator_config: fullConfig })
+      .eq('theme_key', activeTheme);
+
+    if (error) {
+      toast({ title: "Error", description: "No se pudieron guardar los parámetros.", variant: "destructive" });
+    } else {
+      toast({ title: "Guardado", description: "Configuración guardada correctamente." });
+    }
   };
 
   return (
@@ -195,44 +506,38 @@ const CalculadoraProduccion = ({ quotationData, isEditorMode, activeTheme }) => 
     >
       <SectionHeader sectionData={sectionData} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-        {/* Columna de Parámetros */}
-        <div className="lg:col-span-1 space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold text-primary mb-3">Parámetros de Producción</h3>
-            <div className="space-y-3">
-              {sections.produccion.map(p => <ParametroItem key={p.id} {...p} value={values[p.id]} onValueChange={(val) => updateValue(p.id, val)} />)}
-            </div>
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-primary mb-3">Parámetros de Operación</h3>
-            <div className="space-y-3">
-              {sections.operacion.map(p => <ParametroItem key={p.id} {...p} value={values[p.id]} onValueChange={(val) => updateValue(p.id, val)} />)}
-            </div>
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-primary mb-3">Parámetros de Costos</h3>
-            <div className="space-y-3">
-              {sections.costos.map(p => <ParametroItem key={p.id} {...p} value={values[p.id]} onValueChange={(val) => updateValue(p.id, val)} />)}
-            </div>
-          </div>
-          {isEditorMode && (
-              <Button onClick={handleSave} className="w-full mt-4">Guardar Parámetros</Button>
-          )}
+      <Tabs value={activeMode} onValueChange={setActiveMode} className="w-full mt-8">
+        <div className="flex justify-center mb-8">
+          <TabsList className="bg-gray-900 border border-gray-800">
+            <TabsTrigger value="tejas" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white px-8">
+              Línea de Tejas
+            </TabsTrigger>
+            <TabsTrigger value="coextrusion" className="data-[state=active]:bg-green-600 data-[state=active]:text-white px-8">
+              Coextrusión
+            </TabsTrigger>
+          </TabsList>
         </div>
 
-        {/* Columna de Resultados */}
-        <div className="lg:col-span-2 space-y-8">
-          <ResultadosClave results={results} rentabilidad={rentabilidad} />
-          
-          <div className="bg-black border border-gray-800 rounded-2xl p-6">
-              <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold text-white">Análisis de Rentabilidad</h3>
-              </div>
-              <AnalisisRentabilidad rentabilidad={rentabilidad} quotationData={quotationData} />
-          </div>
-        </div>
-      </div>
+        <TabsContent value="tejas">
+          <TejasCalculator
+            config={tejasConfig}
+            onUpdate={setTejasConfig}
+            isEditorMode={isEditorMode}
+            onSave={handleSave}
+            quotationData={quotationData}
+          />
+        </TabsContent>
+
+        <TabsContent value="coextrusion">
+          <CoextrusionCalculator
+            config={coexConfig}
+            onUpdate={setCoexConfig}
+            isEditorMode={isEditorMode}
+            onSave={handleSave}
+          />
+        </TabsContent>
+      </Tabs>
+
     </motion.div>
   );
 };
