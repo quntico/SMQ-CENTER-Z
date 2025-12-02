@@ -342,30 +342,42 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
                   <Button variant="outline" size="sm" onClick={addOptional} className="border-gray-700 hover:bg-gray-800"><PlusCircle className="h-4 w-4 mr-2" />Agregar</Button>
                 </div>
               </div>
-              <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+              {/* Header Row */}
+              <div className="grid grid-cols-[auto_1fr_220px_100px_auto] gap-3 px-2 mb-2 text-xs text-gray-500 font-medium uppercase tracking-wider">
+                <div className="w-10 text-center">Activo</div>
+                <div>Descripción</div>
+                <div>{viewMode === 'cost' ? 'Costo (USD)' : 'Precio Venta (USD)'}</div>
+                <div>Factor</div>
+                <div className="w-8"></div>
+              </div>
+
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
                 {(costConfig.optionals || []).map(opt => {
                   const cost = Number(opt.cost) || 0;
                   const factor = Number(opt.factor) || 1.6;
                   const sellingPrice = cost * factor;
 
                   return (
-                    <div key={opt.id} className={`flex items-center gap-2 transition-opacity ${!opt.isEnabled ? 'opacity-50' : ''}`}>
-                      <Switch
-                        checked={opt.isEnabled}
-                        onCheckedChange={() => toggleOptional(opt.id)}
-                        className="data-[state=checked]:bg-[#2563eb]"
-                      />
+                    <div key={opt.id} className={`grid grid-cols-[auto_1fr_220px_100px_auto] gap-3 items-center p-2 rounded-md transition-colors hover:bg-gray-800/30 ${!opt.isEnabled ? 'opacity-50' : ''}`}>
+                      <div className="flex justify-center w-10">
+                        <Switch
+                          checked={opt.isEnabled}
+                          onCheckedChange={() => toggleOptional(opt.id)}
+                          className="data-[state=checked]:bg-[#2563eb]"
+                        />
+                      </div>
                       <Input
-                        placeholder="Descripción del opcional"
+                        placeholder="Descripción"
                         value={opt.name}
                         onChange={e => updateOptional(opt.id, 'name', e.target.value)}
                         disabled={!opt.isEnabled}
+                        className="w-full"
                       />
 
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="relative w-40">
+                            <div className="relative w-full">
                               <Input
                                 type="number"
                                 placeholder={viewMode === 'cost' ? "Costo" : "Precio"}
@@ -397,7 +409,7 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
                         </Tooltip>
                       </TooltipProvider>
 
-                      <div className="relative w-24">
+                      <div className="relative w-full">
                         <Input
                           type="number"
                           placeholder="Factor"
@@ -410,7 +422,9 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
                         />
                         <span className="absolute inset-y-0 right-8 flex items-center text-xs text-gray-400 pointer-events-none">x</span>
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => removeOptional(opt.id)} className="text-red-500 hover:bg-red-500/10 hover:text-red-400"><Trash2 size={16} /></Button>
+                      <div className="w-8 flex justify-center">
+                        <Button variant="ghost" size="icon" onClick={() => removeOptional(opt.id)} className="text-red-500 hover:bg-red-500/10 hover:text-red-400 h-8 w-8"><Trash2 size={16} /></Button>
+                      </div>
                     </div>
                   )
                 })}
