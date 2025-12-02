@@ -227,7 +227,7 @@ export const generateCotizadorPDF = async (pdfData) => {
     ['Comisión', `${formatCurrency(comision_usd)} (${formatCurrency(comision_mxn, 'MXN')})`],
     ['Precio Venta (USD)', formatCurrency(calculatedCosts.precio_venta)],
     ['Precio Venta (MXN)', formatCurrency(calculatedCosts.precio_venta_mxn, 'MXN')],
-    ['I.V.A. (16%)', formatCurrency(calculatedCosts.iva)],
+    ['I.V.A. (16%)', `${formatCurrency(calculatedCosts.iva)} (${formatCurrency(calculatedCosts.iva_mxn, 'MXN')})`],
     [{ content: 'TOTAL (USD)', styles: { fontStyle: 'bold', textColor: brandColor, fontSize: 9 } }, { content: formatCurrency(calculatedCosts.neto), styles: { fontStyle: 'bold', textColor: brandColor, fontSize: 9 } }],
     [{ content: 'TOTAL (MXN)', styles: { fontStyle: 'bold', textColor: brandColor, fontSize: 9 } }, { content: formatCurrency(calculatedCosts.neto_mxn, 'MXN'), styles: { fontStyle: 'bold', textColor: brandColor, fontSize: 9 } }],
     [{ content: 'Factor', styles: { fontStyle: 'bold', fontSize: 9 } }, { content: calculatedCosts.factor.toFixed(2), styles: { fontStyle: 'bold', fontSize: 9 } }],
