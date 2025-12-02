@@ -310,55 +310,110 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
             </div>
 
             <div className="space-y-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800">
+              import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
+              import {Eye, EyeOff} from 'lucide-react';
+
+              // ... existing imports
+
+              // Inside CotizadorPage component
+              const [viewMode, setViewMode] = useState('cost'); // 'cost' | 'price'
+
+// ... existing code
+
+  const toggleViewMode = () => {
+                setViewMode(prev => prev === 'cost' ? 'price' : 'cost');
+  };
+
+              // ... inside the render loop for optionals
+
               <div className='flex justify-between items-center'>
                 <Label className="text-[#2563eb] font-semibold flex items-center gap-2"><PackagePlus size={16} /> Opcionales</Label>
-                <Button variant="outline" size="sm" onClick={addOptional} className="border-gray-700 hover:bg-gray-800"><PlusCircle className="h-4 w-4 mr-2" />Agregar</Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleViewMode}
+                    className="text-gray-400 hover:text-white"
+                    title={viewMode === 'cost' ? "Ver Precios de Venta" : "Ver Costos"}
+                  >
+                    {viewMode === 'cost' ? <Eye size={16} className="mr-2" /> : <EyeOff size={16} className="mr-2" />}
+                    {viewMode === 'cost' ? 'Ver Precios' : 'Ver Costos'}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={addOptional} className="border-gray-700 hover:bg-gray-800"><PlusCircle className="h-4 w-4 mr-2" />Agregar</Button>
+                </div>
               </div>
               <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                {(costConfig.optionals || []).map(opt => (
-                  <div key={opt.id} className={`flex items-center gap-2 transition-opacity ${!opt.isEnabled ? 'opacity-50' : ''}`}>
-                    <Switch
-                      checked={opt.isEnabled}
-                      onCheckedChange={() => toggleOptional(opt.id)}
-                      className="data-[state=checked]:bg-[#2563eb]"
-                    />
-                    <Input
-                      placeholder="Descripción del opcional"
-                      value={opt.name}
-                      onChange={e => updateOptional(opt.id, 'name', e.target.value)}
-                      disabled={!opt.isEnabled}
-                    />
-                    <div className="relative w-40">
+                {(costConfig.optionals || []).map(opt => {
+                  const cost = Number(opt.cost) || 0;
+                  const factor = Number(opt.factor) || 1.6;
+                  const sellingPrice = cost * factor;
+
+                  return (
+                    <div key={opt.id} className={`flex items-center gap-2 transition-opacity ${!opt.isEnabled ? 'opacity-50' : ''}`}>
+                      <Switch
+                        checked={opt.isEnabled}
+                        onCheckedChange={() => toggleOptional(opt.id)}
+                        className="data-[state=checked]:bg-[#2563eb]"
+                      />
                       <Input
-                        type="number"
-                        placeholder="Costo"
-                        value={opt.cost}
-                        onChange={e => updateOptional(opt.id, 'cost', e.target.value)}
-                        onFocus={handleFocus}
-                        className="pr-10"
+                        placeholder="Descripción del opcional"
+                        value={opt.name}
+                        onChange={e => updateOptional(opt.id, 'name', e.target.value)}
                         disabled={!opt.isEnabled}
                       />
-                      <span className="absolute inset-y-0 right-3 flex items-center text-xs text-gray-400">USD</span>
+
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="relative w-40">
+                              <Input
+                                type="number"
+                                placeholder={viewMode === 'cost' ? "Costo" : "Precio"}
+                                value={viewMode === 'cost' ? opt.cost : (sellingPrice.toFixed(2))}
+                                onChange={e => {
+                                  const val = parseFloat(e.target.value) || 0;
+                                  if (viewMode === 'cost') {
+                                    updateOptional(opt.id, 'cost', val);
+                                  } else {
+                                    // Reverse calculate cost: Cost = Price / Factor
+                                    const newCost = factor !== 0 ? val / factor : 0;
+                                    updateOptional(opt.id, 'cost', newCost);
+                                  }
+                                }}
+                                onFocus={handleFocus}
+                                className={`pr-10 ${viewMode === 'price' ? 'text-green-400 font-bold' : ''}`}
+                                disabled={!opt.isEnabled}
+                              />
+                              <span className="absolute inset-y-0 right-3 flex items-center text-xs text-gray-400">USD</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="bg-gray-800 border-gray-700 text-white">
+                            <p className="font-semibold">
+                              {viewMode === 'cost'
+                                ? `Precio Venta: ${formatCurrency(sellingPrice)}`
+                                : `Costo Original: ${formatCurrency(cost)}`}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      <div className="relative w-24">
+                        <Input
+                          type="number"
+                          placeholder="Factor"
+                          value={opt.factor}
+                          onChange={e => updateOptional(opt.id, 'factor', parseFloat(e.target.value) || 0)}
+                          onFocus={handleFocus}
+                          className="pr-1"
+                          disabled={!opt.isEnabled}
+                          step="0.1"
+                        />
+                        <span className="absolute inset-y-0 right-8 flex items-center text-xs text-gray-400 pointer-events-none">x</span>
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => removeOptional(opt.id)} className="text-red-500 hover:bg-red-500/10 hover:text-red-400"><Trash2 size={16} /></Button>
                     </div>
-                    <div className="relative w-24">
-                      <Input
-                        type="number"
-                        placeholder="Factor"
-                        value={opt.factor}
-                        onChange={e => updateOptional(opt.id, 'factor', parseFloat(e.target.value) || 0)}
-                        onFocus={handleFocus}
-                        className="pr-1"
-                        disabled={!opt.isEnabled}
-                        step="0.1"
-                      />
-                      <span className="absolute inset-y-0 right-8 flex items-center text-xs text-gray-400 pointer-events-none">x</span>
-                    </div>
-                    <div className="w-24 text-right text-xs font-mono text-green-400">
-                      {formatCurrency((Number(opt.cost) || 0) * (Number(opt.factor) || 1.6))}
-                    </div>
-                    <Button variant="ghost" size="icon" onClick={() => removeOptional(opt.id)} className="text-red-500 hover:bg-red-500/10 hover:text-red-400"><Trash2 size={16} /></Button>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
               {(costConfig.optionals || []).length > 0 && (
                 <div className="flex justify-end items-center pt-2 border-t border-gray-700">
