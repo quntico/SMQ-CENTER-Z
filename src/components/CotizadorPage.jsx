@@ -68,7 +68,7 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
     });
     setDisplayConfig(initialDisplay);
 
-  }, [activeTheme, quotationData]);
+  }, [quotationData?.theme_key]);
 
   const calculatedCosts = useMemo(() => {
     const {
