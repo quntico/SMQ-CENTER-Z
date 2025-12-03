@@ -275,7 +275,23 @@ const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onConte
                     >
                       {expandedFichas[index] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                     </button>
-                    <TabIcon size={16} className={cn(activeSelection.index === index ? "text-blue-400" : "text-gray-500")} />
+
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <IconPicker
+                        value={ficha.icon || 'FileText'}
+                        onChange={(newIcon) => {
+                          const newContent = [...content];
+                          newContent[index].icon = newIcon;
+                          updateAllContent(newContent);
+                        }}
+                        isEditorMode={true}
+                      >
+                        <Button variant="ghost" size="icon" className="h-6 w-6 p-0 hover:bg-gray-700 rounded-md">
+                          <TabIcon size={16} className={cn(activeSelection.index === index ? "text-blue-400" : "text-gray-500")} />
+                        </Button>
+                      </IconPicker>
+                    </div>
+
                     <span className="font-medium truncate text-sm">{ficha.tabTitle}</span>
                   </div>
                   <DropdownMenu>
