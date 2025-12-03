@@ -293,7 +293,9 @@ const SidebarItem = ({
                 }}
                 className={cn(
                   "flex items-center gap-2 p-2 rounded-md cursor-pointer transition-all text-sm",
-                  activeSubItemIndex === subItem.id ? "bg-blue-900/20 text-blue-400" : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
+                  activeSubItemIndex === subItem.id
+                    ? "text-blue-400 underline decoration-blue-500 underline-offset-4 font-medium"
+                    : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
                 )}
               >
                 <SubIcon size={14} />

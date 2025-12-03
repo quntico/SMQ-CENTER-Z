@@ -374,6 +374,7 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
             isAdminView={isAdminView}
             onCotizadorClick={() => handleSectionSelect('cotizador_page')}
             onSubItemSelect={handleSubItemSelect}
+            activeTabMap={activeTabMap}
           />
         </div>
         <div className="flex-1 flex flex-col overflow-hidden">

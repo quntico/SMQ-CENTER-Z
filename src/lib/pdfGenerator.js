@@ -251,7 +251,7 @@ export const generateFichasTecnicasPDF = async (fichas, quotationData) => {
   const doc = new jsPDF();
   const pageHeight = doc.internal.pageSize.height;
   const pageWidth = doc.internal.pageSize.width;
-  const pageHeight = doc.internal.pageSize.height;
+
   const margin = 20;
   let cursorY = margin;
 
