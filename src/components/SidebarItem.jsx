@@ -77,11 +77,14 @@ const SidebarItem = ({
   }, [isEditingLabel]);
 
   // Auto-expand if active or if a sub-item is active
+  // Auto-expand if active, collapse if not active
   useEffect(() => {
-    if (isActive || (subItems && activeSubItemIndex !== undefined)) {
+    if (isActive) {
       setIsExpanded(true);
+    } else {
+      setIsExpanded(false);
     }
-  }, [isActive, activeSubItemIndex, subItems]);
+  }, [isActive]);
 
   if (!section || !section.id) {
     return null;
