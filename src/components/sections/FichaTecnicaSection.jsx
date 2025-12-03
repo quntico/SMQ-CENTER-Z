@@ -200,6 +200,8 @@ const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onConte
     const fileName = `${Date.now()}_${sanitizedFileName}`;
 
     setIsUploading(true);
+    toast({ title: 'Subiendo imagen...', description: 'Por favor espera.' }); // Immediate feedback
+
     try {
       const BUCKET = await getActiveBucket();
       const { error } = await supabase.storage.from(BUCKET).upload(fileName, file);
@@ -223,6 +225,8 @@ const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onConte
       }
     } finally {
       setIsUploading(false);
+      // Reset input value to allow uploading same file again if needed
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -378,10 +382,10 @@ const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onConte
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  id={`upload-${fichaIndex}`}
+                  ref={fileInputRef}
                   onChange={(e) => handleImageUpload(e, fichaIndex)}
                 />
-                <Button variant="outline" onClick={() => document.getElementById(`upload-${fichaIndex}`).click()} disabled={isUploading}>
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
                   {isUploading ? <Loader2 className="animate-spin mr-2" /> : <Upload className="mr-2 w-4 h-4" />}
                   Subir Imagen
                 </Button>
