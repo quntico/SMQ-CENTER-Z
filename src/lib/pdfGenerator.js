@@ -256,8 +256,8 @@ export const generateFichasTecnicasPDF = async (fichas, quotationData) => {
   let cursorY = margin;
 
   const addFichaHeader = async () => {
-    // Black Header Background (Increased height to 45mm to fit even larger logo)
-    const headerHeight = 45;
+    // Black Header Background (Reverted to 30mm as requested, with maximized logo)
+    const headerHeight = 30;
     doc.setFillColor(0, 0, 0);
     doc.rect(0, 0, pageWidth, headerHeight, 'F');
 
@@ -267,11 +267,10 @@ export const generateFichasTecnicasPDF = async (fichas, quotationData) => {
       const logoBase64 = await toBase64(quotationData.logo);
       if (logoBase64) {
         const imgProps = doc.getImageProperties(logoBase64);
-        // Maximize logo
-        // User asked for another 50% increase.
-        // Previous was 24mm. 24 * 1.5 = 36mm.
-        const maxHeight = 36;
-        const maxWidth = 150; // Allow more width
+        // Maximize logo within 30mm header
+        // User liked the large logo, so we fill the 30mm header almost entirely.
+        const maxHeight = 28; // Leaves 1mm padding top/bottom
+        const maxWidth = 150;
 
         let logoWidth = imgProps.width;
         let logoHeight = imgProps.height;
@@ -291,18 +290,18 @@ export const generateFichasTecnicasPDF = async (fichas, quotationData) => {
 
     // Fallback Logo Text if no image
     if (!logoAdded) {
-      doc.setFontSize(24); // Larger fallback text
+      doc.setFontSize(24);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(0, 160, 255); // Cyan-ish Blue
-      doc.text('SMQ', margin, 28); // Centered approx
+      doc.text('SMQ', margin, 20);
     }
 
     // Header Title
-    doc.setFontSize(20); // Larger title
+    doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 100, 255); // Blue
-    // Align vertically roughly with logo center (approx Y=28 for 45mm height)
-    doc.text('FICHAS TÉCNICAS', pageWidth - margin, 28, { align: 'right' });
+    // Align vertically roughly with logo center (approx Y=20 for 30mm height)
+    doc.text('FICHAS TÉCNICAS', pageWidth - margin, 20, { align: 'right' });
 
     // Client Info Section
     cursorY = headerHeight + 10; // Start 1cm below header
