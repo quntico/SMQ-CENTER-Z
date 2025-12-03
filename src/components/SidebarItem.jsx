@@ -312,17 +312,30 @@ const SidebarItem = ({
     </div>
   );
 
+  // Debugging log to verify code update and logic
+  // console.log(`SidebarItem: ${section.id}, isActive: ${isActive}, hasSubItems: ${hasSubItems}`);
+
+  let containerClasses = "flex flex-col px-3 py-2 my-1 rounded-lg transition-all duration-200 border border-transparent led-blue-box-hover";
+
+  // Only apply solid blue background (led-blue-box) if it's active AND has NO sub-items
+  if (isActive && !isEditorMode && !hasSubItems) {
+    containerClasses += " led-blue-box";
+  }
+
+  // Editor mode active style
+  if (isEditorMode && isActive) {
+    containerClasses += " bg-blue-500/10 border-blue-500/30";
+  }
+
+  // Hidden item style
+  if (!isVisible && isEditorMode) {
+    containerClasses += " opacity-50 grayscale";
+  }
+
   return (
     <motion.div
       layout
-      className={cn(
-        "flex flex-col px-3 py-2 my-1 rounded-lg transition-all duration-200 border border-transparent led-blue-box-hover",
-        isActive && !isEditorMode && !hasSubItems // Only highlight main box if no subitems
-          ? "led-blue-box"
-          : "",
-        isEditorMode && isActive && "bg-blue-500/10 border-blue-500/30", // Distinct style for active in editor
-        !isVisible && isEditorMode && "opacity-50 grayscale" // Visual cue for hidden items
-      )}
+      className={containerClasses}
     >
       {isCollapsed ? (
         <TooltipProvider delayDuration={100}>
