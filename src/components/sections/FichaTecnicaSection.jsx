@@ -55,12 +55,19 @@ const defaultContentSingle = {
   ],
 };
 
-const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onContentChange }) => {
+const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onContentChange, activeTab: externalActiveTab }) => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Sync external active tab
+  useEffect(() => {
+    if (externalActiveTab !== undefined && externalActiveTab !== null) {
+      setActiveTab(externalActiveTab);
+    }
+  }, [externalActiveTab]);
 
   // Editor State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -138,6 +145,48 @@ const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onConte
     newContent.splice(index + 1, 0, newTab);
     updateAllContent(newContent);
     toast({ title: 'Ficha duplicada' });
+  };
+
+  const handleMoveFicha = (index, direction, e) => {
+    e.stopPropagation();
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= content.length) return;
+    const newContent = [...content];
+    const [movedFicha] = newContent.splice(index, 1);
+    newContent.splice(newIndex, 0, movedFicha);
+    updateAllContent(newContent);
+    // Update selection index if needed
+    if (activeSelection.type === 'ficha' && activeSelection.index === index) {
+      setActiveSelection({ ...activeSelection, index: newIndex });
+    } else if (activeSelection.type === 'ficha' && activeSelection.index === newIndex) {
+      setActiveSelection({ ...activeSelection, index: index });
+    }
+    // Update expanded state
+    const newExpanded = { ...expandedFichas };
+    newExpanded[newIndex] = expandedFichas[index];
+    newExpanded[index] = expandedFichas[newIndex];
+    setExpandedFichas(newExpanded);
+  };
+
+  const handleMoveFicha = (index, direction, e) => {
+    e.stopPropagation();
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= content.length) return;
+    const newContent = [...content];
+    const [movedFicha] = newContent.splice(index, 1);
+    newContent.splice(newIndex, 0, movedFicha);
+    updateAllContent(newContent);
+    // Update selection index if needed
+    if (activeSelection.type === 'ficha' && activeSelection.index === index) {
+      setActiveSelection({ ...activeSelection, index: newIndex });
+    } else if (activeSelection.type === 'ficha' && activeSelection.index === newIndex) {
+      setActiveSelection({ ...activeSelection, index: index });
+    }
+    // Update expanded state
+    const newExpanded = { ...expandedFichas };
+    newExpanded[newIndex] = expandedFichas[index];
+    newExpanded[index] = expandedFichas[newIndex];
+    setExpandedFichas(newExpanded);
   };
 
   const handleRemoveFicha = (index, e) => {
@@ -294,6 +343,16 @@ const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onConte
 
                     <span className="font-medium truncate text-sm">{ficha.tabTitle}</span>
                   </div>
+
+                  <div className="flex items-center gap-1 ml-auto opacity-0 group-hover:opacity-100 transition-opacity mr-2">
+                    <Button variant="ghost" size="icon" className="h-5 w-5 text-gray-500 hover:text-white" onClick={(e) => handleMoveFicha(index, -1, e)} disabled={index === 0}>
+                      <ArrowUp size={12} />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-5 w-5 text-gray-500 hover:text-white" onClick={(e) => handleMoveFicha(index, 1, e)} disabled={index === content.length - 1}>
+                      <ArrowDown size={12} />
+                    </Button>
+                  </div>
+
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"><Settings size={12} /></Button>

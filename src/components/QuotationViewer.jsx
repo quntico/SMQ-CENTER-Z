@@ -218,6 +218,48 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
     await supabase.from('quotations').update({ sections_config: sanitizedConfig }).eq('theme_key', activeTheme);
   };
 
+  const [activeTabMap, setActiveTabMap] = useState({});
+
+  const handleSubItemSelect = (sectionId, index) => {
+    setActiveSection(sectionId);
+    setActiveTabMap(prev => ({ ...prev, [sectionId]: index }));
+    const el = document.getElementById(sectionId);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const renderActiveComponent = () => {
+    if (activeSection === 'cotizador_page') {
+      return (
+        <CotizadorPage
+          quotationData={displayData}
+          activeTheme={activeTheme}
+          setThemes={setThemes}
+        />
+      );
+    }
+
+    const activeSectionObj = menuItems.find(s => s.id === activeSection);
+    const ActiveComponent = activeSectionObj?.Component || componentMap[activeSection] || GenericSection;
+
+    return (
+      <MainContent
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
+        quotationData={displayData}
+        aiQuery={aiQuery}
+        setAiQuery={setAiQuery}
+        sections={menuItems}
+        allSectionsData={displayData.sections_config} // Pass full config including hidden items
+        isEditorMode={isEditorMode && isAdminView}
+        setIsEditorMode={setIsEditorMode}
+        activeTheme={activeTheme}
+        onSectionContentUpdate={setSectionsConfig}
+        onVideoUrlUpdate={handleVideoUrlUpdate}
+        activeTabMap={activeTabMap} // Pass active tabs
+      />
+    );
+  };
+
   if (!displayData) return null;
 
   let menuItems = (displayData.sections_config || defaultSections).map(section => {
@@ -228,10 +270,21 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
       displayLabel = t('sections.ventajas');
     }
 
+    // Generate subItems for Ficha
+    let subItems = [];
+    if (section.id === 'ficha' && section.content && Array.isArray(section.content)) {
+      subItems = section.content.map((item, index) => ({
+        id: index,
+        label: item.tabTitle || `Ficha ${index + 1}`,
+        icon: item.icon || 'FileText'
+      }));
+    }
+
     return {
       ...section,
       Component: componentMap[cleanCompKey] || componentMap[section.id] || GenericSection,
-      label: displayLabel || t(`sections.${section.id}`)
+      label: displayLabel || t(`sections.${section.id}`),
+      subItems // Add subItems
     };
   });
 
@@ -350,6 +403,8 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
             onAdminLogout={handleAdminLogout}
             isAdminView={isAdminView}
             onCotizadorClick={() => handleSectionSelect('cotizador_page')}
+            onSubItemSelect={handleSubItemSelect}
+            activeTabMap={activeTabMap}
           />
         </div>
         <div className="flex-1 flex flex-col overflow-hidden">

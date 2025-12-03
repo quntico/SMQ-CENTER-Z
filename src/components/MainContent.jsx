@@ -1,25 +1,26 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const MainContent = ({ 
-  activeSection, 
-  setActiveSection, 
-  quotationData, 
-  aiQuery, 
-  setAiQuery, 
+const MainContent = ({
+  activeSection,
+  setActiveSection,
+  quotationData,
+  aiQuery,
+  setAiQuery,
   sections,
   allSections,
   isEditorMode,
   setIsEditorMode,
   activeTheme,
   onSectionContentUpdate,
-  onVideoUrlUpdate
+  onVideoUrlUpdate,
+  activeTabMap // Receive activeTabMap
 }) => {
 
   const handleContentChange = (sectionId, newContent) => {
-    const newSections = sections.map(sec => 
-      sec.id === sectionId 
-        ? { ...sec, content: { ...sec.content, ...newContent } } 
+    const newSections = sections.map(sec =>
+      sec.id === sectionId
+        ? { ...sec, content: { ...sec.content, ...newContent } }
         : sec
     );
     onSectionContentUpdate(newSections);
@@ -31,19 +32,19 @@ const MainContent = ({
     );
     onSectionContentUpdate(newSections);
   };
-  
+
   const handleSectionDataChange = (sectionId, newSectionData) => {
     const newSections = sections.map(sec =>
       sec.id === sectionId ? newSectionData : sec
     );
     onSectionContentUpdate(newSections);
   };
-  
+
   return (
     <main className="relative px-4"> {/* Moved px-4 here */}
       {sections.map(section => {
         if (!section.isVisible) return null;
-        
+
         const Component = section.Component;
         if (!Component) return null;
 
@@ -60,6 +61,7 @@ const MainContent = ({
           activeTheme,
           onContentChange: (newContent) => handleSectionContentChange(section.id, newContent),
           onDataChange: (newData) => handleSectionDataChange(section.id, newData),
+          activeTab: activeTabMap ? activeTabMap[section.id] : undefined, // Pass activeTab
           ...(section.id === 'propuesta' && { sections: allSections }),
           ...(section.id === 'video' && { onVideoUrlUpdate }),
         };

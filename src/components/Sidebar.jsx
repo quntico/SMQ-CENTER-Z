@@ -32,6 +32,8 @@ const Sidebar = ({
   onAdminLogout,
   isAdminView,
   onCotizadorClick,
+  onSubItemSelect,
+  activeTabMap
 }) => {
   const { t } = useLanguage();
   const { toast } = useToast();
@@ -158,6 +160,10 @@ const Sidebar = ({
                               onClick={() => section.id === 'portada' ? onHomeClick() : onSectionSelect(section.id)}
                               isEditorMode={isEditorMode}
                               onVisibilityToggle={() => toggleSectionVisibility(section.id)}
+
+                              subItems={section.subItems}
+                              onSubItemSelect={(index) => onSubItemSelect && onSubItemSelect(section.id, index)}
+                              activeSubItemIndex={activeTabMap ? activeTabMap[section.id] : undefined}
 
                               onMoveUp={(e) => { e.stopPropagation(); moveSection(index, 'up'); }}
                               onMoveDown={(e) => { e.stopPropagation(); moveSection(index, 'down'); }}

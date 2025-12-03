@@ -9,7 +9,9 @@ import {
   Copy,
   Trash2,
   MoreVertical,
-  Edit2
+  Edit2,
+  ChevronRight,
+  ChevronDown
 } from 'lucide-react';
 import { iconMap } from '@/lib/iconMap';
 import { cn } from '@/lib/utils';
@@ -46,11 +48,15 @@ const SidebarItem = ({
   isLast,
 
   dragHandleProps,
-  isDragging
+  isDragging,
+  subItems,
+  onSubItemSelect,
+  activeSubItemIndex
 }) => {
   const { t } = useLanguage();
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [tempLabel, setTempLabel] = useState("");
+  const [isExpanded, setIsExpanded] = useState(false);
   const inputRef = useRef(null);
 
   // Logic to determine display label:
@@ -69,6 +75,13 @@ const SidebarItem = ({
       inputRef.current.select(); // Select all text for easy replacement
     }
   }, [isEditingLabel]);
+
+  // Auto-expand if active or if a sub-item is active
+  useEffect(() => {
+    if (isActive || (subItems && activeSubItemIndex !== undefined)) {
+      setIsExpanded(true);
+    }
+  }, [isActive, activeSubItemIndex, subItems]);
 
   if (!section || !section.id) {
     return null;
@@ -98,154 +111,196 @@ const SidebarItem = ({
     e.stopPropagation();
   };
 
+  const handleMainClick = (e) => {
+    if (!isEditingLabel) {
+      if (subItems && subItems.length > 0) {
+        setIsExpanded(!isExpanded);
+        onClick(e); // Still trigger main selection
+      } else {
+        onClick(e);
+      }
+    }
+  };
+
   const itemContent = (
-    <div
-      className={cn(
-        "group relative flex items-center w-full cursor-pointer min-h-[40px]",
-        isDragging && "opacity-50"
-      )}
-      onClick={(e) => {
-        if (!isEditingLabel) onClick(e);
-      }}
-    >
-      {/* Drag Handle - Only in Editor Mode */}
-      {isEditorMode && !isCollapsed && (
-        <div
-          {...dragHandleProps}
-          className="cursor-grab active:cursor-grabbing p-1 -ml-1 mr-1 opacity-30 group-hover:opacity-100 transition-opacity"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <GripVertical className="w-4 h-4 text-gray-400" />
-        </div>
-      )}
-
-      <IconPicker
-        value={section.icon}
-        onChange={onIconChange}
-        isEditorMode={isEditorMode && !isLocked}
-        trigger={
+    <div className="w-full">
+      <div
+        className={cn(
+          "group relative flex items-center w-full cursor-pointer min-h-[40px]",
+          isDragging && "opacity-50"
+        )}
+        onClick={handleMainClick}
+      >
+        {/* Drag Handle - Only in Editor Mode */}
+        {isEditorMode && !isCollapsed && (
           <div
-            className={cn(
-              "flex-shrink-0 transition-transform duration-200 p-1 rounded-md",
-              isEditorMode && !isLocked ? "hover:bg-white/10 cursor-pointer" : ""
-            )}
-            onClick={(e) => isEditorMode && !isLocked && e.stopPropagation()}
+            {...dragHandleProps}
+            className="cursor-grab active:cursor-grabbing p-1 -ml-1 mr-1 opacity-30 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => e.stopPropagation()}
           >
-            <Icon className={cn(
-              "w-5 h-5 led-blue-hover",
-              isActive && "scale-110 led-blue-text",
-              isCollapsed && "mx-auto"
-            )} />
+            <GripVertical className="w-4 h-4 text-gray-400" />
           </div>
-        }
-      />
+        )}
 
-      {!isCollapsed && (
-        <div className="ml-3 flex-1 overflow-hidden relative">
-          {isEditorMode && isEditingLabel ? (
-            <input
-              ref={inputRef}
-              value={tempLabel}
-              onChange={(e) => setTempLabel(e.target.value)}
-              onBlur={handleSaveLabel}
-              onKeyDown={handleKeyDown}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full bg-gray-900 text-white text-sm px-2 py-1 rounded border border-blue-500 outline-none shadow-lg z-50 relative"
-            />
-          ) : (
-            <span
+        <IconPicker
+          value={section.icon}
+          onChange={onIconChange}
+          isEditorMode={isEditorMode && !isLocked}
+          trigger={
+            <div
               className={cn(
-                "block truncate text-sm transition-all duration-200 select-none led-blue-hover",
-                isActive ? "font-semibold led-blue-text" : "text-gray-300",
-                isEditorMode && !isLocked && "hover:text-blue-400 cursor-text"
+                "flex-shrink-0 transition-transform duration-200 p-1 rounded-md",
+                isEditorMode && !isLocked ? "hover:bg-white/10 cursor-pointer" : ""
               )}
-              onDoubleClick={(e) => {
-                if (isEditorMode && !isLocked) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsEditingLabel(true);
-                }
-              }}
-              title={isEditorMode ? "Doble clic para renombrar" : ""}
+              onClick={(e) => isEditorMode && !isLocked && e.stopPropagation()}
             >
-              {displayLabel}
-            </span>
-          )}
-        </div>
-      )}
-
-      {isActive && !isCollapsed && !isEditorMode && (
-        <motion.div
-          layoutId="activeIndicator"
-          className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-l-full"
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              <Icon className={cn(
+                "w-5 h-5 led-blue-hover",
+                isActive && "scale-110 led-blue-text",
+                isCollapsed && "mx-auto"
+              )} />
+            </div>
+          }
         />
-      )}
 
-      {/* Editor Controls - Only Visible in Editor Mode & Not Collapsed */}
-      {isEditorMode && !isCollapsed && (
-        <div className="ml-auto flex items-center gap-1 opacity-100 transition-opacity bg-black/90 backdrop-blur-sm rounded-l-md pl-1 shadow-xl border-l border-gray-800/50 absolute right-0 h-full pr-1">
+        {!isCollapsed && (
+          <div className="ml-3 flex-1 overflow-hidden relative flex items-center justify-between">
+            {isEditorMode && isEditingLabel ? (
+              <input
+                ref={inputRef}
+                value={tempLabel}
+                onChange={(e) => setTempLabel(e.target.value)}
+                onBlur={handleSaveLabel}
+                onKeyDown={handleKeyDown}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full bg-gray-900 text-white text-sm px-2 py-1 rounded border border-blue-500 outline-none shadow-lg z-50 relative"
+              />
+            ) : (
+              <span
+                className={cn(
+                  "block truncate text-sm transition-all duration-200 select-none led-blue-hover",
+                  isActive ? "font-semibold led-blue-text" : "text-gray-300",
+                  isEditorMode && !isLocked && "hover:text-blue-400 cursor-text"
+                )}
+                onDoubleClick={(e) => {
+                  if (isEditorMode && !isLocked) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsEditingLabel(true);
+                  }
+                }}
+                title={isEditorMode ? "Doble clic para renombrar" : ""}
+              >
+                {displayLabel}
+              </span>
+            )}
+            {/* Chevron for sub-items */}
+            {subItems && subItems.length > 0 && (
+              <div className="mr-2 text-gray-500">
+                {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </div>
+            )}
+          </div>
+        )}
 
-          {/* Rename Button (Direct Access) */}
-          {!isLocked && (
-            <button
-              onClick={(e) => { e.stopPropagation(); setIsEditingLabel(true); }}
-              className="p-1.5 hover:text-blue-400 text-gray-400 transition-colors rounded-md hover:bg-white/5"
-              title="Renombrar"
-            >
-              <Edit2 className="w-3.5 h-3.5" />
-            </button>
-          )}
+        {isActive && !isCollapsed && !isEditorMode && (
+          <motion.div
+            layoutId="activeIndicator"
+            className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-l-full"
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          />
+        )}
 
-          {/* Delete Button (Direct Access) */}
-          {!isLocked && (
-            <button
-              onClick={onDelete}
-              className="p-1.5 hover:text-red-400 text-gray-400 transition-colors rounded-md hover:bg-white/5"
-              title="Eliminar"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          )}
+        {/* Editor Controls - Only Visible in Editor Mode & Not Collapsed */}
+        {isEditorMode && !isCollapsed && (
+          <div className="ml-auto flex items-center gap-1 opacity-100 transition-opacity bg-black/90 backdrop-blur-sm rounded-l-md pl-1 shadow-xl border-l border-gray-800/50 absolute right-0 h-full pr-1">
 
-          {/* Visibility Toggle */}
-          {!isLocked && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onVisibilityToggle(); }}
-              className={cn(
-                "p-1.5 transition-colors rounded-md hover:bg-white/5",
-                isVisible ? "hover:text-blue-400 text-gray-400" : "text-gray-600"
-              )}
-              title={isVisible ? "Ocultar" : "Mostrar"}
-            >
-              {isVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-            </button>
-          )}
-
-          {/* More Actions Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="p-1.5 hover:text-white text-gray-400 transition-colors rounded-md hover:bg-white/5" onClick={(e) => e.stopPropagation()}>
-                <MoreVertical className="w-3.5 h-3.5" />
+            {/* Rename Button (Direct Access) */}
+            {!isLocked && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setIsEditingLabel(true); }}
+                className="p-1.5 hover:text-blue-400 text-gray-400 transition-colors rounded-md hover:bg-white/5"
+                title="Renombrar"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
               </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-gray-900 border-gray-800 text-gray-200 z-[60]">
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMoveUp(); }} disabled={isFirst} className="cursor-pointer focus:bg-gray-800">
-                <ArrowUp className="w-4 h-4 mr-2" /> Mover Arriba
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMoveDown(); }} disabled={isLast} className="cursor-pointer focus:bg-gray-800">
-                <ArrowDown className="w-4 h-4 mr-2" /> Mover Abajo
-              </DropdownMenuItem>
+            )}
 
-              {!isLocked && (
-                <>
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate(e); }} className="cursor-pointer focus:bg-gray-800">
-                    <Copy className="w-4 h-4 mr-2" /> Duplicar
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            {/* Delete Button (Direct Access) */}
+            {!isLocked && (
+              <button
+                onClick={onDelete}
+                className="p-1.5 hover:text-red-400 text-gray-400 transition-colors rounded-md hover:bg-white/5"
+                title="Eliminar"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {/* Visibility Toggle */}
+            {!isLocked && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onVisibilityToggle(); }}
+                className={cn(
+                  "p-1.5 transition-colors rounded-md hover:bg-white/5",
+                  isVisible ? "hover:text-blue-400 text-gray-400" : "text-gray-600"
+                )}
+                title={isVisible ? "Ocultar" : "Mostrar"}
+              >
+                {isVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              </button>
+            )}
+
+            {/* More Actions Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-1.5 hover:text-white text-gray-400 transition-colors rounded-md hover:bg-white/5" onClick={(e) => e.stopPropagation()}>
+                  <MoreVertical className="w-3.5 h-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-gray-900 border-gray-800 text-gray-200 z-[60]">
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMoveUp(); }} disabled={isFirst} className="cursor-pointer focus:bg-gray-800">
+                  <ArrowUp className="w-4 h-4 mr-2" /> Mover Arriba
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMoveDown(); }} disabled={isLast} className="cursor-pointer focus:bg-gray-800">
+                  <ArrowDown className="w-4 h-4 mr-2" /> Mover Abajo
+                </DropdownMenuItem>
+
+                {!isLocked && (
+                  <>
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate(e); }} className="cursor-pointer focus:bg-gray-800">
+                      <Copy className="w-4 h-4 mr-2" /> Duplicar
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+      </div>
+
+      {/* Sub-items Render */}
+      {!isCollapsed && isExpanded && subItems && subItems.length > 0 && (
+        <div className="pl-9 space-y-1 mt-1">
+          {subItems.map((subItem, idx) => {
+            const SubIcon = subItem.icon && iconMap[subItem.icon] ? iconMap[subItem.icon] : iconMap['FileText'];
+            return (
+              <div
+                key={idx}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSubItemSelect(subItem.id);
+                }}
+                className={cn(
+                  "flex items-center gap-2 p-2 rounded-md cursor-pointer transition-all text-sm",
+                  activeSubItemIndex === subItem.id ? "bg-blue-900/20 text-blue-400" : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
+                )}
+              >
+                <SubIcon size={14} />
+                <span className="truncate">{subItem.label}</span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -255,8 +310,8 @@ const SidebarItem = ({
     <motion.div
       layout
       className={cn(
-        "flex items-center px-3 py-2 my-1 rounded-lg transition-all duration-200 border border-transparent led-blue-box-hover",
-        isActive && !isEditorMode
+        "flex flex-col px-3 py-2 my-1 rounded-lg transition-all duration-200 border border-transparent led-blue-box-hover",
+        isActive && !isEditorMode && !subItems // Only highlight main box if no subitems or not expanded? Or keep it.
           ? "led-blue-box"
           : "",
         isEditorMode && isActive && "bg-blue-500/10 border-blue-500/30", // Distinct style for active in editor
