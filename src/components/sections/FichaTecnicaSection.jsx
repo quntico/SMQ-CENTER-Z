@@ -35,6 +35,7 @@ import { generateFichasTecnicasPDF } from '@/lib/pdfGenerator';
 
 const defaultContentSingle = {
   tabTitle: 'Ficha Principal',
+  icon: 'FileText',
   image: '',
   technicalDataTitle: 'Datos Técnicos',
   componentsTitle: 'Componentes',
@@ -256,62 +257,65 @@ const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onConte
       </div>
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
-          {content.map((ficha, index) => (
-            <div key={index} className="space-y-1 pt-2">
-              <div
-                className={cn(
-                  "flex items-center justify-between p-2 rounded-md cursor-pointer transition-all group",
-                  activeSelection.type === 'ficha' && activeSelection.index === index ? "bg-blue-900/30 text-white border border-blue-500/30" : "text-gray-400 hover:bg-gray-800 hover:text-gray-200"
-                )}
-                onClick={() => setActiveSelection({ type: 'ficha', index })}
-              >
-                <div className="flex items-center gap-2 overflow-hidden">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); toggleFichaExpand(index); }}
-                    className="p-0.5 hover:bg-gray-700 rounded"
-                  >
-                    {expandedFichas[index] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                  </button>
-                  <FileText size={16} className={cn(activeSelection.index === index ? "text-blue-400" : "text-gray-500")} />
-                  <span className="font-medium truncate text-sm">{ficha.tabTitle}</span>
+          {content.map((ficha, index) => {
+            const TabIcon = iconMap[ficha.icon] || FileText;
+            return (
+              <div key={index} className="space-y-1 pt-2">
+                <div
+                  className={cn(
+                    "flex items-center justify-between p-2 rounded-md cursor-pointer transition-all group",
+                    activeSelection.type === 'ficha' && activeSelection.index === index ? "bg-blue-900/30 text-white border border-blue-500/30" : "text-gray-400 hover:bg-gray-800 hover:text-gray-200"
+                  )}
+                  onClick={() => setActiveSelection({ type: 'ficha', index })}
+                >
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleFichaExpand(index); }}
+                      className="p-0.5 hover:bg-gray-700 rounded"
+                    >
+                      {expandedFichas[index] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    </button>
+                    <TabIcon size={16} className={cn(activeSelection.index === index ? "text-blue-400" : "text-gray-500")} />
+                    <span className="font-medium truncate text-sm">{ficha.tabTitle}</span>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"><Settings size={12} /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-gray-900 border-gray-700">
+                      <DropdownMenuItem onClick={(e) => handleDuplicateFicha(index, e)} className="text-white hover:bg-gray-800 cursor-pointer"><Copy className="w-4 h-4 mr-2" />Duplicar</DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => handleRemoveFicha(index, e)} className="text-red-400 hover:bg-red-900/30 cursor-pointer"><Trash2 className="w-4 h-4 mr-2" />Eliminar</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"><Settings size={12} /></Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-gray-900 border-gray-700">
-                    <DropdownMenuItem onClick={(e) => handleDuplicateFicha(index, e)} className="text-white hover:bg-gray-800 cursor-pointer"><Copy className="w-4 h-4 mr-2" />Duplicar</DropdownMenuItem>
-                    <DropdownMenuItem onClick={(e) => handleRemoveFicha(index, e)} className="text-red-400 hover:bg-red-900/30 cursor-pointer"><Trash2 className="w-4 h-4 mr-2" />Eliminar</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
 
-              {expandedFichas[index] && (
-                <div className="pl-6 space-y-0.5 border-l border-gray-800 ml-4">
-                  <div
-                    onClick={() => setActiveSelection({ type: 'category', index, category: 'technical_data' })}
-                    className={cn(
-                      "flex items-center gap-2 p-2 rounded-md cursor-pointer transition-all text-xs",
-                      activeSelection.type === 'category' && activeSelection.index === index && activeSelection.category === 'technical_data' ? "bg-blue-900/20 text-blue-200 border border-blue-500/20" : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
-                    )}
-                  >
-                    <Database size={14} />
-                    <span>Datos Técnicos</span>
+                {expandedFichas[index] && (
+                  <div className="pl-6 space-y-0.5 border-l border-gray-800 ml-4">
+                    <div
+                      onClick={() => setActiveSelection({ type: 'category', index, category: 'technical_data' })}
+                      className={cn(
+                        "flex items-center gap-2 p-2 rounded-md cursor-pointer transition-all text-xs",
+                        activeSelection.type === 'category' && activeSelection.index === index && activeSelection.category === 'technical_data' ? "bg-blue-900/20 text-blue-200 border border-blue-500/20" : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
+                      )}
+                    >
+                      <Database size={14} />
+                      <span>Datos Técnicos</span>
+                    </div>
+                    <div
+                      onClick={() => setActiveSelection({ type: 'category', index, category: 'components' })}
+                      className={cn(
+                        "flex items-center gap-2 p-2 rounded-md cursor-pointer transition-all text-xs",
+                        activeSelection.type === 'category' && activeSelection.index === index && activeSelection.category === 'components' ? "bg-blue-900/20 text-blue-200 border border-blue-500/20" : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
+                      )}
+                    >
+                      <Cpu size={14} />
+                      <span>Componentes</span>
+                    </div>
                   </div>
-                  <div
-                    onClick={() => setActiveSelection({ type: 'category', index, category: 'components' })}
-                    className={cn(
-                      "flex items-center gap-2 p-2 rounded-md cursor-pointer transition-all text-xs",
-                      activeSelection.type === 'category' && activeSelection.index === index && activeSelection.category === 'components' ? "bg-blue-900/20 text-blue-200 border border-blue-500/20" : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
-                    )}
-                  >
-                    <Cpu size={14} />
-                    <span>Componentes</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            );
+          })}
         </div>
       </ScrollArea>
     </div>
@@ -332,6 +336,7 @@ const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onConte
     if (!ficha) return null;
 
     if (activeSelection.type === 'ficha') {
+      const CurrentIcon = iconMap[ficha.icon] || FileText;
       return (
         <div className="space-y-8">
           <div>
@@ -341,15 +346,30 @@ const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onConte
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Nombre de la Pestaña</Label>
-                <Input
-                  value={ficha.tabTitle}
-                  onChange={(e) => {
-                    const newContent = [...content];
-                    newContent[fichaIndex].tabTitle = e.target.value;
-                    updateAllContent(newContent);
-                  }}
-                  className="bg-gray-900 border-gray-700"
-                />
+                <div className="flex gap-2">
+                  <IconPicker
+                    value={ficha.icon || 'FileText'}
+                    onChange={(newIcon) => {
+                      const newContent = [...content];
+                      newContent[fichaIndex].icon = newIcon;
+                      updateAllContent(newContent);
+                    }}
+                    isEditorMode={true}
+                  >
+                    <Button variant="outline" size="icon" className="shrink-0 bg-gray-900 border-gray-700 hover:bg-gray-800">
+                      <CurrentIcon className="w-4 h-4" />
+                    </Button>
+                  </IconPicker>
+                  <Input
+                    value={ficha.tabTitle}
+                    onChange={(e) => {
+                      const newContent = [...content];
+                      newContent[fichaIndex].tabTitle = e.target.value;
+                      updateAllContent(newContent);
+                    }}
+                    className="bg-gray-900 border-gray-700"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -601,25 +621,29 @@ const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onConte
         <div className="mt-12">
           {/* Tabs Navigation */}
           <div className="flex items-center border-b border-gray-700 mb-8 overflow-x-auto scrollbar-hide">
-            {content.map((tab, index) => (
-              <div
-                key={index}
-                onClick={() => setActiveTab(index)}
-                className={cn(
-                  "relative group cursor-pointer px-1 transition-all",
-                  activeTab === index ? 'opacity-100' : 'opacity-70 hover:opacity-100'
-                )}
-              >
-                <div className={cn(
-                  "px-6 py-3 text-sm font-medium rounded-t-lg whitespace-nowrap transition-all flex items-center justify-center min-w-[120px]",
-                  activeTab === index
-                    ? 'bg-primary/10 text-[#2563eb] border-b-2 border-[#2563eb] shadow-[0_4px_10px_-4px_rgba(37,99,235,0.5)]'
-                    : 'bg-transparent text-gray-400 hover:bg-white/5 hover:text-[#2563eb] hover:drop-shadow-[0_0_8px_rgba(37,99,235,0.5)]'
-                )}>
-                  {tab.tabTitle}
+            {content.map((tab, index) => {
+              const TabIcon = iconMap[tab.icon] || FileText;
+              return (
+                <div
+                  key={index}
+                  onClick={() => setActiveTab(index)}
+                  className={cn(
+                    "relative group cursor-pointer px-1 transition-all",
+                    activeTab === index ? 'opacity-100' : 'opacity-70 hover:opacity-100'
+                  )}
+                >
+                  <div className={cn(
+                    "px-6 py-3 text-sm font-medium rounded-t-lg whitespace-nowrap transition-all flex items-center justify-center min-w-[120px] gap-2",
+                    activeTab === index
+                      ? 'bg-primary/10 text-[#2563eb] border-b-2 border-[#2563eb] shadow-[0_4px_10px_-4px_rgba(37,99,235,0.5)]'
+                      : 'bg-transparent text-gray-400 hover:bg-white/5 hover:text-[#2563eb] hover:drop-shadow-[0_0_8px_rgba(37,99,235,0.5)]'
+                  )}>
+                    <TabIcon size={16} />
+                    {tab.tabTitle}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Content Area */}
