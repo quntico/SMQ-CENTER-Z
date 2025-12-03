@@ -298,7 +298,8 @@ const PropuestaEconomicaSection = ({
     setContent(newContent);
 
     // Propagate to parent ONLY if in editor mode (prevents DB writes for public users)
-    if (onContentChange && isEditorMode) {
+    // Use isModeAdmin to allow saving even if only local admin mode is active
+    if (onContentChange && isModeAdmin) {
       onContentChange(newContent);
     }
   };
@@ -910,7 +911,10 @@ const PropuestaEconomicaSection = ({
                 <div className="space-y-3">
                   <Button
                     className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
-                    onClick={() => toast({ title: "Guardado", description: "Selección almacenada correctamente." })}
+                    onClick={() => {
+                      updateContent(content);
+                      toast({ title: "Guardado", description: "Selección almacenada correctamente." });
+                    }}
                   >
                     <Save size={18} className="mr-2" /> Guardar Selección
                   </Button>
