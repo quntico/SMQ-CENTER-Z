@@ -315,7 +315,12 @@ const SidebarItem = ({
   // Debugging log to verify code update and logic
   // console.log(`SidebarItem: ${section.id}, isActive: ${isActive}, hasSubItems: ${hasSubItems}`);
 
-  let containerClasses = "flex flex-col px-3 py-2 my-1 rounded-lg transition-all duration-200 border border-transparent led-blue-box-hover";
+  let containerClasses = "flex flex-col px-3 py-2 my-1 rounded-lg transition-all duration-200 border border-transparent";
+
+  // Only apply hover effect if it has NO sub-items (leaf nodes)
+  if (!hasSubItems) {
+    containerClasses += " led-blue-box-hover";
+  }
 
   // Only apply solid blue background (led-blue-box) if it's active AND has NO sub-items
   if (isActive && !isEditorMode && !hasSubItems) {
