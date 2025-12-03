@@ -256,8 +256,8 @@ export const generateFichasTecnicasPDF = async (fichas, quotationData) => {
   let cursorY = margin;
 
   const addFichaHeader = async () => {
-    // Black Header Background (Reduced height to 20mm ~ 2cm)
-    const headerHeight = 20;
+    // Black Header Background (Increased height to 30mm to fit larger logo)
+    const headerHeight = 30;
     doc.setFillColor(0, 0, 0);
     doc.rect(0, 0, pageWidth, headerHeight, 'F');
 
@@ -270,8 +270,10 @@ export const generateFichasTecnicasPDF = async (fichas, quotationData) => {
         // Maximize logo in the smaller header
         // User asked for 70% increase, but we are constrained by 20mm height.
         // We will make it fill 80% of the header height (16mm) which is visually prominent.
-        const maxHeight = 16;
-        const maxWidth = 100; // Allow more width (increased from 80)
+        // Maximize logo
+        // User asked for 50% increase from previous 16mm -> ~24mm
+        const maxHeight = 24;
+        const maxWidth = 120; // Allow more width
 
         let logoWidth = imgProps.width;
         let logoHeight = imgProps.height;
@@ -294,15 +296,22 @@ export const generateFichasTecnicasPDF = async (fichas, quotationData) => {
       doc.setFontSize(20);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(0, 160, 255); // Cyan-ish Blue
-      doc.text('SMQ', margin, 13);
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 160, 255); // Cyan-ish Blue
+      doc.text('SMQ', margin, 19);
     }
 
     // Header Title
     doc.setFontSize(16); // Slightly smaller to fit 20mm
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 100, 255); // Blue
-    // Align vertically roughly with logo center (approx Y=13 for 20mm height)
-    doc.text('FICHAS TÉCNICAS', pageWidth - margin, 13, { align: 'right' });
+    // Header Title
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 100, 255); // Blue
+    // Align vertically roughly with logo center (approx Y=19 for 30mm height)
+    doc.text('FICHAS TÉCNICAS', pageWidth - margin, 19, { align: 'right' });
 
     // Client Info Section
     cursorY = headerHeight + 10; // Start 1cm below header
