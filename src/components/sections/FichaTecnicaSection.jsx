@@ -428,7 +428,7 @@ const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onConte
 
           <div className="space-y-3">
             {items.map((item, idx) => {
-              const Icon = iconMap[item.icon] || iconMap['FileText'];
+              const Icon = iconMap[item.icon] || FileText;
               return (
                 <div key={item.id} className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 flex gap-4 items-start group hover:border-gray-700 transition-colors">
                   <div className="shrink-0 pt-1">
@@ -501,44 +501,43 @@ const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onConte
 
       <div className="space-y-4">
         <AnimatePresence>
-          {currentTabData[category] && currentTabData[category].map((item) => {
-            const Icon = iconMap[item.icon] || iconMap['FileText'];
-            return (
-              <motion.div
-                key={item.id}
-                layout
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: -30 }}
-                transition={{ duration: 0.3 }}
-                className="flex items-center justify-between rounded-lg gap-4 transition-all p-3 bg-black/30 border border-transparent"
-              >
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="h-10 w-10 flex items-center justify-center">
-                    <Icon className="w-6 h-6 text-[#2563eb]" />
-                  </div>
+          const Icon = iconMap[item.icon] || FileText; // Fallback to imported FileText component directly
+          return (
+          <motion.div
+            key={item.id}
+            layout
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, x: -30 }}
+            transition={{ duration: 0.3 }}
+            className="flex items-center justify-between rounded-lg gap-4 transition-all p-3 bg-black/30 border border-transparent"
+          >
+            <div className="flex items-center gap-4 flex-1">
+              <div className="h-10 w-10 flex items-center justify-center">
+                <Icon className="w-6 h-6 text-[#2563eb]" />
+              </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-base sm:text-lg text-[#2563eb]">
-                      {item.label}
-                    </div>
-                  </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-base sm:text-lg text-[#2563eb]">
+                  {item.label}
                 </div>
+              </div>
+            </div>
 
-                <div className="text-right flex items-center gap-3">
-                  <div className="flex flex-col gap-1 min-w-[8rem] max-w-[14rem]">
-                    <div className="text-center break-words font-bold text-lg sm:text-xl text-white">
-                      {item.value}
-                    </div>
-                    {item.unit && (
-                      <div className="text-center text-xs sm:text-sm text-gray-400">
-                        {item.unit}
-                      </div>
-                    )}
-                  </div>
+            <div className="text-right flex items-center gap-3">
+              <div className="flex flex-col gap-1 min-w-[8rem] max-w-[14rem]">
+                <div className="text-center break-words font-bold text-lg sm:text-xl text-white">
+                  {item.value}
                 </div>
-              </motion.div>
-            );
+                {item.unit && (
+                  <div className="text-center text-xs sm:text-sm text-gray-400">
+                    {item.unit}
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+          );
           })}
         </AnimatePresence>
       </div>
