@@ -256,8 +256,8 @@ export const generateFichasTecnicasPDF = async (fichas, quotationData) => {
   let cursorY = margin;
 
   const addFichaHeader = async () => {
-    // Black Header Background (Increased height to 30mm to fit larger logo)
-    const headerHeight = 30;
+    // Black Header Background (Increased height to 45mm to fit even larger logo)
+    const headerHeight = 45;
     doc.setFillColor(0, 0, 0);
     doc.rect(0, 0, pageWidth, headerHeight, 'F');
 
@@ -267,13 +267,11 @@ export const generateFichasTecnicasPDF = async (fichas, quotationData) => {
       const logoBase64 = await toBase64(quotationData.logo);
       if (logoBase64) {
         const imgProps = doc.getImageProperties(logoBase64);
-        // Maximize logo in the smaller header
-        // User asked for 70% increase, but we are constrained by 20mm height.
-        // We will make it fill 80% of the header height (16mm) which is visually prominent.
         // Maximize logo
-        // User asked for 50% increase from previous 16mm -> ~24mm
-        const maxHeight = 24;
-        const maxWidth = 120; // Allow more width
+        // User asked for another 50% increase.
+        // Previous was 24mm. 24 * 1.5 = 36mm.
+        const maxHeight = 36;
+        const maxWidth = 150; // Allow more width
 
         let logoWidth = imgProps.width;
         let logoHeight = imgProps.height;
@@ -293,25 +291,18 @@ export const generateFichasTecnicasPDF = async (fichas, quotationData) => {
 
     // Fallback Logo Text if no image
     if (!logoAdded) {
-      doc.setFontSize(20);
+      doc.setFontSize(24); // Larger fallback text
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(0, 160, 255); // Cyan-ish Blue
-      doc.setFontSize(20);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 160, 255); // Cyan-ish Blue
-      doc.text('SMQ', margin, 19);
+      doc.text('SMQ', margin, 28); // Centered approx
     }
 
     // Header Title
-    doc.setFontSize(16); // Slightly smaller to fit 20mm
+    doc.setFontSize(20); // Larger title
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 100, 255); // Blue
-    // Header Title
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 100, 255); // Blue
-    // Align vertically roughly with logo center (approx Y=19 for 30mm height)
-    doc.text('FICHAS TÉCNICAS', pageWidth - margin, 19, { align: 'right' });
+    // Align vertically roughly with logo center (approx Y=28 for 45mm height)
+    doc.text('FICHAS TÉCNICAS', pageWidth - margin, 28, { align: 'right' });
 
     // Client Info Section
     cursorY = headerHeight + 10; // Start 1cm below header
