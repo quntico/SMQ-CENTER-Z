@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Save } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import SectionHeader from '@/components/SectionHeader';
@@ -189,321 +190,419 @@ const TejasCalculator = ({ config, onUpdate, isEditorMode, onSave, quotationData
 
 // --- Coextrusion Calculator (New) ---
 
+// --- Coextrusion Calculator (New) ---
+
 const defaultCoexValues = {
-  ingredients: [
-    { name: 'Material A', percent: 50, cost: 22 },
-    { name: 'Material B', percent: 30, cost: 22 },
-    { name: 'Material C', percent: 20, cost: 22 },
-    { name: 'Aditivo', percent: 0, cost: 24 },
+  mixture: [
+    { id: 'm1', type: 'LDPE', name: 'LDPE - LDPE - I', percent: 50, density: 0.92, cost: 22 },
+    { id: 'm2', type: 'LLDPE', name: 'LLDPE - LLDPE', percent: 30, density: 0.92, cost: 22 },
+    { id: 'm3', type: 'HDPE', name: 'HDPE - HDPE -', percent: 20, density: 0.95, cost: 22 },
+    { id: 'm4', type: 'Personalizado', name: 'Personalizado /', percent: 0, density: 0, cost: 0 },
   ],
-  width_mm: 1200,
-  thickness_microns: 20,
-  speed_m_min: 90,
-  density: 0.92,
-  power_kw: 150,
-  cost_kwh: 2.10,
-  ops_cost_hr: 1.68, // This seems low for hourly, but screenshot says "Costo Operativo $1.68/kg". The input is usually hourly. Let's check the math.
-  // Screenshot: Costo Operativo $1.68/kg.
-  // If input is hourly cost, we need to calculate it backwards or change the input to be per kg.
-  // The current code calculates: totalOpsCostMonthly = values.ops_cost_hr * values.hours_day * values.days_month;
-  // And displays Costo Operativo in the summary.
-  // Let's stick to the screenshot values for the defaults where they match directly.
-  // Wait, the screenshot shows "Costo Operativo $1.68/kg".
-  // The input in the code is `ops_cost_hr`.
-  // I will update the defaults to what I can infer, but the user said "copia estos datos".
-  // I will set the defaults that are direct inputs.
-  // Width: 1200, Thickness: 20, Speed: 90.
-  // Ingredients: 50/22, 30/22, 20/22, 0/24.
-  // Costo Energía: $2.10/kg (This is a result, not an input usually, or maybe `cost_kwh`?)
-  // The screenshot has "Costo Energía $2.10/kg".
-  // The code has `cost_kwh`.
-  // I will set `cost_kwh` to 2.10 for now, assuming the user might have meant that or the system calculates it.
-  // Actually, let's look at the inputs in the screenshot.
-  // The screenshot shows inputs for "Ancho", "Espesor", "Velocidad".
-  // It doesn't show the inputs for costs clearly other than the summary.
-  // I will update the known inputs.
-  sales_price_kg: 37,
-  hours_day: 24, // Assumed standard
-  days_month: 30, // Assumed standard
+  process: {
+    capacity_kgh: 180, // Primary Variable
+    width_mm: 1300,
+    thickness_um: 20,
+    speed_m_min: 90,
+    density_gcm3: 0.926, // Calculated or override
+  },
+  costs: {
+    sales_price: 37.00,
+    power_kw: 100,
+    electricity_cost: 2.5,
+    fixed_costs_hr: 200,
+    work_hours_day: 24,
+  }
 };
+
+const MATERIAL_TYPES = ['LDPE', 'LLDPE', 'HDPE', 'PP', 'Personalizado'];
 
 const CoextrusionCalculator = ({ config, onUpdate, isEditorMode, onSave }) => {
   const [values, setValues] = useState({ ...defaultCoexValues, ...config });
 
-  // Ensure ingredients array exists if config is partial
+  // Ensure structure exists
   useEffect(() => {
-    if (!values.ingredients) {
-      setValues(prev => ({ ...prev, ingredients: defaultCoexValues.ingredients }));
+    let needsUpdate = false;
+    const newValues = { ...values };
+
+    if (!newValues.mixture) {
+      newValues.mixture = defaultCoexValues.mixture;
+      needsUpdate = true;
     }
-  }, [values.ingredients]);
+    if (!newValues.process) {
+      newValues.process = defaultCoexValues.process;
+      needsUpdate = true;
+    }
+    if (!newValues.costs) {
+      newValues.costs = defaultCoexValues.costs;
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) setValues(newValues);
+  }, [config]);
 
   const [metrics, setMetrics] = useState({
-    mixtureCost: 0,
-    outputKgH: 0,
-    dailyProdKg: 0,
-    monthlyProdKg: 0,
-    dailyEnergyKwh: 0,
-    dailyEnergyCost: 0,
-    grossProfitMonthly: 0,
-    marginPercent: 0,
+    avgMixtureCost: 0,
+    totalFormulaPercent: 0,
+    hourlyProduction: 0,
+    monthlyProductionTon: 0,
+    totalCostPerKg: 0,
+    grossMargin: 0,
+    monthlyNetProfit: 0,
+    theoreticalCapacity: 0
   });
 
   useEffect(() => {
     onUpdate(values);
 
-    // 1. Mixture Cost
+    // 1. Mixture Calculations
     let totalPercent = 0;
     let weightedCost = 0;
-    values.ingredients?.forEach(ing => {
-      totalPercent += ing.percent;
-      weightedCost += (ing.percent / 100) * ing.cost;
+    let weightedDensity = 0;
+
+    values.mixture?.forEach(m => {
+      totalPercent += m.percent;
+      weightedCost += (m.percent / 100) * m.cost;
+      weightedDensity += (m.percent / 100) * m.density;
     });
-    // Normalize if not 100%? For now, just use weighted sum. If sum < 100, it assumes rest is free or error. 
-    // Let's assume user inputs sum to 100.
 
-    // 2. Production Output (Kg/h)
-    // Formula: Width(m) * Thickness(m) * Speed(m/min) * 60 * Density(kg/m3)
-    const width_m = values.width_mm / 1000;
-    const thick_m = values.thickness_microns / 1000000;
-    const density_kg_m3 = values.density * 1000;
-    const outputKgH = width_m * thick_m * values.speed_m_min * 60 * density_kg_m3;
+    // 2. Process Calculations
+    // Theoretical Capacity = Width * Thickness * Speed * Density * 0.06
+    // Width (m) = mm / 1000
+    // Thickness (mm) = um / 1000
+    // Speed (m/min)
+    // Density (g/cm3) = kg/L approx? 
+    // Formula: Q (kg/h) = Width(m) * Thickness(um) * Speed(m/min) * Density(g/cm3) * 0.06
+    // Let's derive: 
+    // 1 m * 1 um * 1 m/min * 1 g/cm3
+    // = 100 cm * 0.0001 cm * 100 cm/min * 1 g/cm3
+    // = 1 cm3 * 1 g/cm3 = 1 g/min
+    // * 60 = 60 g/h = 0.06 kg/h. Correct.
 
-    const dailyProdKg = outputKgH * values.hours_day;
-    const monthlyProdKg = dailyProdKg * values.days_month;
+    const width_m = (values.process?.width_mm || 0) / 1000;
+    const thick_um = (values.process?.thickness_um || 0);
+    const speed = (values.process?.speed_m_min || 0);
+    // Use calculated density if not manually set? For now use weighted density from mixture
+    const density = weightedDensity > 0 ? weightedDensity : (values.process?.density_gcm3 || 0.92);
 
-    // 3. Energy
-    const dailyEnergyKwh = values.power_kw * values.hours_day;
-    const dailyEnergyCost = dailyEnergyKwh * values.cost_kwh;
+    const theoreticalCapacity = values.process?.width_mm * values.process?.thickness_um * values.process?.speed_m_min * density * 0.00006;
 
-    // 4. Profitability
-    const totalOpsCostMonthly = values.ops_cost_hr * values.hours_day * values.days_month;
-    const totalMatCostMonthly = monthlyProdKg * weightedCost;
-    const totalEnergyCostMonthly = dailyEnergyCost * values.days_month;
+    // PRIMARY VARIABLE: User Input Capacity
+    const actualCapacity = values.process?.capacity_kgh || 0;
 
-    const totalCostMonthly = totalMatCostMonthly + totalOpsCostMonthly + totalEnergyCostMonthly;
-    const totalRevenueMonthly = monthlyProdKg * values.sales_price_kg;
+    // 3. Costs & Profitability
+    const monthlyHours = (values.costs?.work_hours_day || 24) * 30;
+    const monthlyProductionKg = actualCapacity * monthlyHours;
+    const monthlyProductionTon = monthlyProductionKg / 1000;
 
-    const grossProfitMonthly = totalRevenueMonthly - totalCostMonthly;
-    const marginPercent = totalRevenueMonthly > 0 ? (grossProfitMonthly / totalRevenueMonthly) * 100 : 0;
+    // Costs per Kg
+    // Energy
+    const powerKw = values.costs?.power_kw || 0;
+    const costKwh = values.costs?.electricity_cost || 0;
+    const energyCostPerHour = powerKw * costKwh;
+    const energyCostPerKg = actualCapacity > 0 ? energyCostPerHour / actualCapacity : 0;
+
+    // Fixed Costs
+    const fixedCostsHr = values.costs?.fixed_costs_hr || 0;
+    const fixedCostPerKg = actualCapacity > 0 ? fixedCostsHr / actualCapacity : 0;
+
+    const totalCostPerKg = weightedCost + energyCostPerKg + fixedCostPerKg;
+
+    // Profit
+    const salesPrice = values.costs?.sales_price || 0;
+    const marginPerKg = salesPrice - totalCostPerKg;
+    const monthlyNetProfit = marginPerKg * monthlyProductionKg;
+    const grossMargin = salesPrice > 0 ? (marginPerKg / salesPrice) * 100 : 0;
 
     setMetrics({
-      mixtureCost: weightedCost,
-      outputKgH,
-      dailyProdKg,
-      monthlyProdKg,
-      dailyEnergyKwh,
-      dailyEnergyCost,
-      grossProfitMonthly,
-      marginPercent,
+      avgMixtureCost: weightedCost,
+      totalFormulaPercent: totalPercent,
+      hourlyProduction: actualCapacity,
+      monthlyProductionTon,
+      totalCostPerKg,
+      grossMargin,
+      monthlyNetProfit,
+      theoreticalCapacity
     });
-  }, [values]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const updateVal = (key, val) => setValues(prev => ({ ...prev, [key]: val }));
+  }, [values]);
 
-  const updateIngredient = (idx, field, val) => {
-    const newIngs = [...values.ingredients];
-    newIngs[idx] = { ...newIngs[idx], [field]: val };
-    setValues(prev => ({ ...prev, ingredients: newIngs }));
+  const updateMixture = (index, field, val) => {
+    const newMix = [...(values.mixture || [])];
+    newMix[index] = { ...newMix[index], [field]: val };
+    setValues(prev => ({ ...prev, mixture: newMix }));
+  };
+
+  const removeComponent = (index) => {
+    const newMix = values.mixture.filter((_, i) => i !== index);
+    setValues(prev => ({ ...prev, mixture: newMix }));
+  };
+
+  const addComponent = () => {
+    if (values.mixture.length >= 4) return;
+    setValues(prev => ({
+      ...prev,
+      mixture: [...prev.mixture, { id: Date.now(), type: 'LDPE', name: 'Nuevo', percent: 0, density: 0.92, cost: 0 }]
+    }));
+  };
+
+  const updateProcess = (field, val) => {
+    setValues(prev => ({ ...prev, process: { ...prev.process, [field]: val } }));
+  };
+
+  const updateCosts = (field, val) => {
+    setValues(prev => ({ ...prev, costs: { ...prev.costs, [field]: val } }));
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8">
-      {/* Left Column: Inputs (4 cols) */}
-      <div className="lg:col-span-5 space-y-6">
+    <div className="space-y-6 mt-8">
+      {/* Top Grid: 3 Columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Mixture Formulator */}
-        <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-800">
-          <h3 className="text-md font-bold text-blue-400 mb-3 flex justify-between">
-            <span>Formulación de Mezcla</span>
-            <span className="text-white">${metrics.mixtureCost.toFixed(2)} / kg</span>
-          </h3>
-          <Table>
-            <TableHeader>
-              <TableRow className="border-gray-800 hover:bg-transparent">
-                <TableHead className="h-8 text-xs text-gray-500">Material</TableHead>
-                <TableHead className="h-8 text-xs text-gray-500 text-right">%</TableHead>
-                <TableHead className="h-8 text-xs text-gray-500 text-right">$/kg</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {values.ingredients?.map((ing, i) => (
-                <TableRow key={i} className="border-gray-800 hover:bg-transparent">
-                  <TableCell className="p-1">
-                    <Input
-                      value={ing.name}
-                      onChange={e => updateIngredient(i, 'name', e.target.value)}
-                      className="h-7 text-xs bg-black border-gray-700"
-                    />
-                  </TableCell>
-                  <TableCell className="p-1">
+        {/* 01 - Estructura de Mezcla */}
+        <div className="bg-gray-900/40 border border-blue-500/30 rounded-xl p-5 flex flex-col h-full relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-cyan-400"></div>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold text-white">01 · ESTRUCTURA DE MEZCLA</h3>
+            <Button variant="outline" size="sm" onClick={addComponent} disabled={values.mixture?.length >= 4} className="h-7 text-xs border-blue-500/50 text-blue-400 hover:bg-blue-900/20">
+              + Componente
+            </Button>
+          </div>
+
+          <p className="text-xs text-gray-400 mb-4">Componentes (máx. 4 materiales - deben sumar 100%)</p>
+
+          <div className="space-y-3 flex-1">
+            {values.mixture?.map((item, i) => (
+              <div key={i} className="bg-black/40 p-2 rounded-lg border border-gray-800">
+                <div className="flex gap-2 mb-2">
+                  <select
+                    className="bg-black border border-gray-700 text-white text-xs rounded px-2 h-8 w-1/3"
+                    value={item.type}
+                    onChange={(e) => updateMixture(i, 'type', e.target.value)}
+                  >
+                    {MATERIAL_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <Input
+                    className="h-8 text-xs bg-black border-gray-700 w-full"
+                    value={item.name}
+                    onChange={(e) => updateMixture(i, 'name', e.target.value)}
+                    placeholder="Nombre"
+                  />
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:bg-red-900/20" onClick={() => removeComponent(i)}>
+                    <span className="text-xs">X</span>
+                  </Button>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <div className="relative flex-1">
                     <Input
                       type="number"
-                      value={ing.percent}
-                      onChange={e => updateIngredient(i, 'percent', parseFloat(e.target.value) || 0)}
-                      className="h-7 text-xs text-right bg-black border-gray-700"
+                      className="h-8 text-right pr-6 bg-black border-gray-700"
+                      value={item.percent}
+                      onChange={(e) => updateMixture(i, 'percent', parseFloat(e.target.value) || 0)}
                     />
-                  </TableCell>
-                  <TableCell className="p-1">
+                    <span className="absolute right-2 top-2 text-xs text-gray-500">%</span>
+                  </div>
+                  <div className="relative flex-1">
                     <Input
                       type="number"
-                      value={ing.cost}
-                      onChange={e => updateIngredient(i, 'cost', parseFloat(e.target.value) || 0)}
-                      className="h-7 text-xs text-right bg-black border-gray-700"
+                      className="h-8 text-right pr-8 bg-black border-gray-700"
+                      value={item.cost}
+                      onChange={(e) => updateMixture(i, 'cost', parseFloat(e.target.value) || 0)}
                     />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+                    <span className="absolute right-2 top-2 text-xs text-gray-500">$/kg</span>
+                  </div>
+                  <div className="relative flex-1">
+                    <Input
+                      type="number"
+                      className="h-8 text-right pr-10 bg-black border-gray-700"
+                      value={item.density}
+                      onChange={(e) => updateMixture(i, 'density', parseFloat(e.target.value) || 0)}
+                    />
+                    <span className="absolute right-2 top-2 text-xs text-gray-500">g/cm³</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
 
-        {/* Machine Params */}
-        <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-800">
-          <h3 className="text-md font-bold text-green-400 mb-3">Parámetros de Máquina</h3>
-          <div className="space-y-2">
-            <ParametroItem
-              label="Ancho (mm)"
-              value={values.width_mm}
-              onValueChange={v => updateVal('width_mm', v)}
-              unit="mm"
-              min={100}
-              max={3000}
-              step={10}
-              className="focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 transition-all duration-200 hover:border-blue-500/50"
-            />
-            <ParametroItem
-              label="Espesor (micras)"
-              value={values.thickness_microns}
-              onValueChange={v => updateVal('thickness_microns', v)}
-              unit="µm"
-              min={10}
-              max={500}
-              step={1}
-              className="focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 transition-all duration-200 hover:border-blue-500/50"
-            />
-            <ParametroItem
-              label="Velocidad (m/min)"
-              value={values.speed_m_min}
-              onValueChange={v => updateVal('speed_m_min', v)}
-              unit="m/min"
-              min={1}
-              max={300}
-              step={1}
-              className="focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 transition-all duration-200 hover:border-blue-500/50"
-            />
-            <ParametroItem
-              label="Densidad (g/cm³)"
-              value={values.density}
-              onValueChange={v => updateVal('density', v)}
-              unit="g/cm³"
-              min={0.5}
-              max={2.0}
-              step={0.01}
-              className="focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 transition-all duration-200 hover:border-blue-500/50"
-            />
+          <div className="mt-4 pt-4 border-t border-gray-800">
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-xs text-cyan-400 font-bold mb-1">COSTO PROMEDIO MEZCLA ($/KG)</p>
+                <p className="text-xs text-gray-500">Total fórmula: <span className={metrics.totalFormulaPercent === 100 ? "text-green-400" : "text-yellow-400"}>{metrics.totalFormulaPercent}%</span></p>
+              </div>
+              <p className="text-2xl font-bold text-white">${metrics.avgMixtureCost.toFixed(2)}</p>
+            </div>
           </div>
         </div>
 
-        {/* Energy & Ops */}
-        <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-800">
-          <h3 className="text-md font-bold text-yellow-400 mb-3">Energía y Operación</h3>
-          <div className="space-y-2">
-            <ParametroItem label="Consumo (kW)" value={values.power_kw} onValueChange={v => updateVal('power_kw', v)} unit="kW" min={0} max={1000} step={5} />
-            <ParametroItem label="Costo Luz ($/kWh)" value={values.cost_kwh} onValueChange={v => updateVal('cost_kwh', v)} unit="$" min={0} max={10} step={0.1} />
-            <ParametroItem label="Costo Op. ($/hr)" value={values.ops_cost_hr} onValueChange={v => updateVal('ops_cost_hr', v)} unit="$" min={0} max={5000} step={10} />
-            <ParametroItem label="Horas/Día" value={values.hours_day} onValueChange={v => updateVal('hours_day', v)} unit="h" min={1} max={24} step={1} />
+        {/* 02 - Parámetros de Proceso */}
+        <div className="bg-gray-900/40 border border-blue-500/30 rounded-xl p-5 flex flex-col h-full relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-600"></div>
+          <h3 className="text-lg font-bold text-white mb-4">02 · PARÁMETROS DE PROCESO</h3>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-bold text-cyan-400 uppercase mb-1 block">CAPACIDAD DE EXTRUSIÓN (KG/H) · VARIABLE PRINCIPAL</label>
+              <Input
+                type="number"
+                className="bg-black/50 border-blue-500/50 text-white text-lg h-10 font-bold"
+                value={values.process?.capacity_kgh}
+                onChange={(e) => updateProcess('capacity_kgh', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-blue-400 uppercase mb-1 block">ANCHO BOBINA (MM)</label>
+              <Input
+                type="number"
+                className="bg-black/50 border-gray-700 text-white h-9"
+                value={values.process?.width_mm}
+                onChange={(e) => updateProcess('width_mm', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-blue-400 uppercase mb-1 block">ESPESOR (MICRAS / MM)</label>
+              <Input
+                type="number"
+                className="bg-black/50 border-gray-700 text-white h-9"
+                value={values.process?.thickness_um}
+                onChange={(e) => updateProcess('thickness_um', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-blue-400 uppercase mb-1 block">VELOCIDAD (M/MIN)</label>
+              <Input
+                type="number"
+                className="bg-black/50 border-gray-700 text-white h-9"
+                value={values.process?.speed_m_min}
+                onChange={(e) => updateProcess('speed_m_min', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">DENSIDAD GLOBAL PELÍCULA (G/CM³) · CALCULADA</label>
+              <Input
+                type="number"
+                className="bg-black/50 border-gray-800 text-gray-400 h-9"
+                value={values.process?.density_gcm3}
+                readOnly
+                disabled
+              />
+            </div>
+
+            <div className="bg-blue-900/20 p-3 rounded-lg border border-blue-500/20 mt-2">
+              <p className="text-xs text-blue-300 uppercase font-bold">PRODUCCIÓN HORARIA (Q)</p>
+              <p className="text-3xl font-black text-cyan-400">{metrics.hourlyProduction.toFixed(1)} <span className="text-sm text-gray-400 font-normal">kg/h</span></p>
+              <p className="text-[10px] text-gray-500 mt-1">
+                Capacidad Teórica (ref): {metrics.theoreticalCapacity.toFixed(1)} kg/h
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 03 - Energía y Costos */}
+        <div className="bg-gray-900/40 border border-blue-500/30 rounded-xl p-5 flex flex-col h-full relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-purple-500"></div>
+          <h3 className="text-lg font-bold text-white mb-4">03 · ENERGÍA Y COSTOS</h3>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-bold text-green-400 uppercase mb-1 block">PRECIO VENTA OBJETIVO ($/KG)</label>
+              <Input
+                type="number"
+                className="bg-black/50 border-green-500/50 text-green-400 text-lg h-10 font-bold"
+                value={values.costs?.sales_price}
+                onChange={(e) => updateCosts('sales_price', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase mb-1 block">CONSUMO (KW)</label>
+                <Input
+                  type="number"
+                  className="bg-black/50 border-gray-700 text-white h-9"
+                  value={values.costs?.power_kw}
+                  onChange={(e) => updateCosts('power_kw', parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase mb-1 block">COSTO LUZ ($/KWH)</label>
+                <Input
+                  type="number"
+                  className="bg-black/50 border-gray-700 text-white h-9"
+                  value={values.costs?.electricity_cost}
+                  onChange={(e) => updateCosts('electricity_cost', parseFloat(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase mb-1 block">GASTOS FIJOS (MO, AGUA) $/HR</label>
+              <Input
+                type="number"
+                className="bg-black/50 border-gray-700 text-white h-9"
+                value={values.costs?.fixed_costs_hr}
+                onChange={(e) => updateCosts('fixed_costs_hr', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase mb-1 block">HORAS TRABAJO / DÍA</label>
+              <Input
+                type="number"
+                className="bg-black/50 border-gray-700 text-white h-9"
+                value={values.costs?.work_hours_day}
+                onChange={(e) => updateCosts('work_hours_day', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom: 04 - Proyección */}
+      <div className="bg-gray-900/40 border border-blue-500/30 rounded-xl p-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-blue-600"></div>
+        <h3 className="text-lg font-bold text-green-400 mb-6">04 · PROYECCIÓN DE RENTABILIDAD</h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="bg-black/30 p-4 rounded-lg border-l-4 border-red-500">
+            <p className="text-xs text-gray-400 uppercase font-bold mb-1">COSTO TOTAL POR KG</p>
+            <p className="text-3xl font-black text-red-400">${metrics.totalCostPerKg.toFixed(2)}</p>
+            <p className="text-[10px] text-gray-500 mt-1">Materia + energía + fijos</p>
+          </div>
+
+          <div className="bg-black/30 p-4 rounded-lg border-l-4 border-green-500">
+            <p className="text-xs text-gray-400 uppercase font-bold mb-1">MARGEN DE UTILIDAD</p>
+            <p className="text-3xl font-black text-green-400">{metrics.grossMargin.toFixed(1)}%</p>
+          </div>
+
+          <div className="bg-black/30 p-4 rounded-lg border-l-4 border-blue-500">
+            <p className="text-xs text-gray-400 uppercase font-bold mb-1">PRODUCCIÓN MENSUAL</p>
+            <p className="text-3xl font-black text-white">{metrics.monthlyProductionTon.toFixed(1)}</p>
+            <p className="text-[10px] text-gray-500 mt-1">Toneladas (30 días)</p>
+          </div>
+
+          <div className="bg-green-900/20 p-4 rounded-lg border border-green-500/30">
+            <p className="text-xs text-green-400 uppercase font-bold mb-1">UTILIDAD MENSUAL NETA</p>
+            <p className="text-3xl font-black text-green-400">${metrics.monthlyNetProfit.toLocaleString('en-US', { maximumFractionDigits: 2 })}</p>
+            <p className="text-[10px] text-green-500/70 mt-1">Estimado en bolsillo</p>
           </div>
         </div>
 
         {isEditorMode && (
-          <Button onClick={onSave} className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white shadow-[0_0_15px_rgba(37,99,235,0.5)] transition-all">
-            <Save className="w-4 h-4 mr-2" /> Guardar Configuración Coextrusión
-          </Button>
+          <div className="flex justify-end gap-4 mt-6">
+            <Button variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-800" onClick={onSave}>
+              <Save className="w-4 h-4 mr-2" /> Guardar datos
+            </Button>
+            <Button className="bg-cyan-600 hover:bg-cyan-700 text-white">
+              ↓ Exportar proyección
+            </Button>
+          </div>
         )}
-      </div>
-
-      {/* Right Column: Results (7 cols) */}
-      <div className="lg:col-span-7 space-y-6">
-        {/* Key Metrics Cards */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-blue-900/20 border border-blue-800 p-4 rounded-xl">
-            <p className="text-sm text-blue-400 uppercase font-bold">Producción Horaria</p>
-            <p className="text-3xl font-black text-white mt-1">{metrics.outputKgH.toFixed(1)} <span className="text-sm font-normal text-gray-400">kg/h</span></p>
-          </div>
-          <div className="bg-green-900/20 border border-green-800 p-4 rounded-xl">
-            <p className="text-sm text-green-400 uppercase font-bold">Producción Mensual</p>
-            <p className="text-3xl font-black text-white mt-1">{(metrics.monthlyProdKg / 1000).toFixed(1)} <span className="text-sm font-normal text-gray-400">Ton</span></p>
-          </div>
-        </div>
-
-        {/* Financial Analysis */}
-        <div className="bg-black border border-gray-800 rounded-2xl p-6">
-          <h3 className="text-xl font-bold text-white mb-6">Análisis Financiero</h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <label className="text-sm text-gray-500 block mb-2">Precio de Venta ($/kg)</label>
-              <div className="flex items-center gap-2 mb-6">
-                <span className="text-2xl text-gray-400">$</span>
-                <Input
-                  type="number"
-                  value={values.sales_price_kg}
-                  onChange={e => updateVal('sales_price_kg', parseFloat(e.target.value))}
-                  className="text-3xl font-bold bg-transparent border-none p-0 h-auto focus-visible:ring-0 w-32"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Costo Mezcla</span>
-                  <span className="text-white font-mono">${metrics.mixtureCost.toFixed(2)}/kg</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Costo Energía</span>
-                  <span className="text-white font-mono">${(metrics.dailyEnergyCost / metrics.dailyProdKg || 0).toFixed(2)}/kg</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Costo Operativo</span>
-                  <span className="text-white font-mono">${(values.ops_cost_hr / metrics.outputKgH || 0).toFixed(2)}/kg</span>
-                </div>
-                <div className="h-px bg-gray-800 my-2"></div>
-                <div className="flex justify-between font-bold">
-                  <span className="text-gray-300">Costo Total</span>
-                  <span className="text-red-400 font-mono">${((metrics.mixtureCost + (metrics.dailyEnergyCost / metrics.dailyProdKg || 0) + (values.ops_cost_hr / metrics.outputKgH || 0))).toFixed(2)}/kg</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col justify-center items-center bg-gray-900/30 rounded-xl p-4">
-              <p className="text-gray-400 text-sm uppercase tracking-widest mb-2">Utilidad Bruta Mensual</p>
-              <p className="text-4xl sm:text-5xl font-black text-green-500">
-                ${metrics.grossProfitMonthly.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-              </p>
-              <div className="mt-4 flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-full text-sm font-bold ${metrics.marginPercent > 20 ? 'bg-green-900/50 text-green-400' : 'bg-yellow-900/50 text-yellow-400'}`}>
-                  {metrics.marginPercent.toFixed(1)}% Margen
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Energy Details */}
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div className="bg-gray-900/30 p-3 rounded-lg">
-            <p className="text-xs text-gray-500">Consumo Diario</p>
-            <p className="text-lg font-bold text-white">{metrics.dailyEnergyKwh.toFixed(0)} kWh</p>
-          </div>
-          <div className="bg-gray-900/30 p-3 rounded-lg">
-            <p className="text-xs text-gray-500">Costo Diario Luz</p>
-            <p className="text-lg font-bold text-white">${metrics.dailyEnergyCost.toFixed(0)}</p>
-          </div>
-          <div className="bg-gray-900/30 p-3 rounded-lg">
-            <p className="text-xs text-gray-500">Costo Mensual Luz</p>
-            <p className="text-lg font-bold text-white">${(metrics.dailyEnergyCost * values.days_month).toLocaleString()}</p>
-          </div>
-        </div>
-
       </div>
     </div>
   );

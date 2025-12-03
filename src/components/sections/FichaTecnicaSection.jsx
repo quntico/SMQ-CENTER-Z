@@ -168,26 +168,7 @@ const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onConte
     setExpandedFichas(newExpanded);
   };
 
-  const handleMoveFicha = (index, direction, e) => {
-    e.stopPropagation();
-    const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= content.length) return;
-    const newContent = [...content];
-    const [movedFicha] = newContent.splice(index, 1);
-    newContent.splice(newIndex, 0, movedFicha);
-    updateAllContent(newContent);
-    // Update selection index if needed
-    if (activeSelection.type === 'ficha' && activeSelection.index === index) {
-      setActiveSelection({ ...activeSelection, index: newIndex });
-    } else if (activeSelection.type === 'ficha' && activeSelection.index === newIndex) {
-      setActiveSelection({ ...activeSelection, index: index });
-    }
-    // Update expanded state
-    const newExpanded = { ...expandedFichas };
-    newExpanded[newIndex] = expandedFichas[index];
-    newExpanded[index] = expandedFichas[newIndex];
-    setExpandedFichas(newExpanded);
-  };
+
 
   const handleRemoveFicha = (index, e) => {
     e.stopPropagation();

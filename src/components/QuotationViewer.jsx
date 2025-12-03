@@ -227,38 +227,7 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const renderActiveComponent = () => {
-    if (activeSection === 'cotizador_page') {
-      return (
-        <CotizadorPage
-          quotationData={displayData}
-          activeTheme={activeTheme}
-          setThemes={setThemes}
-        />
-      );
-    }
 
-    const activeSectionObj = menuItems.find(s => s.id === activeSection);
-    const ActiveComponent = activeSectionObj?.Component || componentMap[activeSection] || GenericSection;
-
-    return (
-      <MainContent
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
-        quotationData={displayData}
-        aiQuery={aiQuery}
-        setAiQuery={setAiQuery}
-        sections={menuItems}
-        allSectionsData={displayData.sections_config} // Pass full config including hidden items
-        isEditorMode={isEditorMode && isAdminView}
-        setIsEditorMode={setIsEditorMode}
-        activeTheme={activeTheme}
-        onSectionContentUpdate={setSectionsConfig}
-        onVideoUrlUpdate={handleVideoUrlUpdate}
-        activeTabMap={activeTabMap} // Pass active tabs
-      />
-    );
-  };
 
   if (!displayData) return null;
 
@@ -344,6 +313,7 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
         activeTheme={activeTheme}
         onSectionContentUpdate={setSectionsConfig}
         onVideoUrlUpdate={handleVideoUrlUpdate}
+        activeTabMap={activeTabMap} // Pass active tabs
       />
     );
   };

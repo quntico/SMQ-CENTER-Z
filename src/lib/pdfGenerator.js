@@ -251,114 +251,187 @@ export const generateFichasTecnicasPDF = async (fichas, quotationData) => {
   const doc = new jsPDF();
   const pageHeight = doc.internal.pageSize.height;
   const pageWidth = doc.internal.pageSize.width;
-  const margin = 15;
+  const pageHeight = doc.internal.pageSize.height;
+  const margin = 20;
   let cursorY = margin;
 
   const addFichaHeader = async () => {
+    // Black Header Background (Reduced height to 20mm ~ 2cm)
+    const headerHeight = 20;
+    doc.setFillColor(0, 0, 0);
+    doc.rect(0, 0, pageWidth, headerHeight, 'F');
+
+    // Logo
+    let logoAdded = false;
     if (quotationData.logo) {
       const logoBase64 = await toBase64(quotationData.logo);
       if (logoBase64) {
-        const logoWidth = 30;
-        const logoHeight = 15;
-        doc.addImage(logoBase64, 'PNG', pageWidth - margin - logoWidth, margin, logoWidth, logoHeight);
+        const imgProps = doc.getImageProperties(logoBase64);
+        // Maximize logo in the smaller header
+        // User asked for 70% increase, but we are constrained by 20mm height.
+        // We will make it fill 80% of the header height (16mm) which is visually prominent.
+        const maxHeight = 16;
+        const maxWidth = 80; // Allow more width
+
+        let logoWidth = imgProps.width;
+        let logoHeight = imgProps.height;
+
+        // Scale to fit constraints
+        const ratio = Math.min(maxWidth / logoWidth, maxHeight / logoHeight);
+        logoWidth *= ratio;
+        logoHeight *= ratio;
+
+        // Center vertically in header
+        const logoY = (headerHeight - logoHeight) / 2;
+
+        doc.addImage(logoBase64, 'PNG', margin, logoY, logoWidth, logoHeight);
+        logoAdded = true;
       }
     }
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`CLIENTE: ${quotationData.client || 'N/A'}`, margin, cursorY);
-    cursorY += 5;
-    doc.text(`EMPRESA: ${quotationData.company || 'N/A'}`, margin, cursorY);
-    cursorY += 5;
-    doc.text(`PROYECTO: ${quotationData.project || 'N/A'}`, margin, cursorY);
-    cursorY += 5;
-    const now = new Date();
-    const formattedDate = format(now, "dd MMMM, yyyy 'a las' HH:mm", { locale: es });
-    doc.text(`FECHA: ${formattedDate}`, margin, cursorY);
-    cursorY += 15;
-    doc.setFontSize(18);
+
+    // Fallback Logo Text if no image
+    if (!logoAdded) {
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 160, 255); // Cyan-ish Blue
+      doc.text('SMQ', margin, 13);
+    }
+
+    // Header Title
+    doc.setFontSize(16); // Slightly smaller to fit 20mm
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(40);
-    doc.text('FICHAS TÉCNICAS', margin, cursorY);
-    cursorY += 10;
+    doc.setTextColor(0, 100, 255); // Blue
+    // Align vertically roughly with logo center (approx Y=13 for 20mm height)
+    doc.text('FICHAS TÉCNICAS', pageWidth - margin, 13, { align: 'right' });
+
+    // Client Info Section
+    cursorY = headerHeight + 10; // Start 1cm below header
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+
+    const lineHeight = 5; // Compact line height
+
+    doc.text(`Cliente: ${quotationData.client || 'N/A'}`, margin, cursorY);
+    cursorY += lineHeight;
+    doc.text(`Proyecto: ${quotationData.project || 'N/A'}`, margin, cursorY);
+    cursorY += lineHeight;
+
+    const now = new Date();
+    const formattedDate = format(now, "d 'de' MMMM 'de' yyyy", { locale: es });
+    doc.text(`Fecha: ${formattedDate}`, margin, cursorY);
+
+    cursorY += 15; // Space before content
   };
 
   await addFichaHeader();
 
   for (const ficha of fichas) {
-    if (cursorY > pageHeight - 60) {
+    // Check space for Title + Image (approx)
+    if (cursorY > pageHeight - 100) {
       doc.addPage();
-      cursorY = margin;
       await addFichaHeader();
     }
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 124, 240);
-    doc.text(ficha.tabTitle, margin, cursorY);
-    cursorY += 8;
 
+    // Ficha Title
+    doc.setFontSize(12); // Slightly smaller font
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255); // White text for title bar
+
+    // Title Bar Background (Reduced height by 50% -> ~12mm)
+    const titleBarHeight = 12;
+    doc.setFillColor(59, 130, 246); // Blue-500
+    // Draw rect starting at cursorY
+    doc.rect(margin, cursorY, pageWidth - (margin * 2), titleBarHeight, 'F');
+
+    // Text centered vertically in the bar
+    doc.text(ficha.tabTitle, margin + 5, cursorY + 8);
+    cursorY += titleBarHeight + 10; // Move cursor past bar + spacing
+
+    // Image
     if (ficha.image) {
       const imageBase64 = await toBase64(ficha.image);
       if (imageBase64) {
         const imgProps = doc.getImageProperties(imageBase64);
-        const imgWidth = 100;
+        const imgWidth = 120;
         const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+
         if (cursorY + imgHeight > pageHeight - margin) {
           doc.addPage();
-          cursorY = margin;
           await addFichaHeader();
         }
+
         doc.addImage(imageBase64, 'PNG', (pageWidth - imgWidth) / 2, cursorY, imgWidth, imgHeight);
-        cursorY += imgHeight + 10;
+        cursorY += imgHeight + 15;
       }
     }
 
     const fichaTableStyles = {
       theme: 'grid',
-      headStyles: { fillColor: [22, 163, 74], textColor: 255, fontStyle: 'bold' },
-      bodyStyles: { textColor: 50 },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-      startY: cursorY,
+      headStyles: {
+        fillColor: [59, 130, 246], // Blue header
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'left',
+        fontSize: 10
+      },
+      bodyStyles: {
+        textColor: 50,
+        cellPadding: 4,
+        fontSize: 9
+      },
+      alternateRowStyles: {
+        fillColor: [249, 250, 251] // Very light gray
+      },
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: '40%' },
+        1: { cellWidth: 'auto' }
+      },
       margin: { left: margin, right: margin },
     };
 
+    // Technical Data Table
     if (ficha.technical_data && ficha.technical_data.length > 0) {
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(40);
-      doc.text(ficha.technicalDataTitle || 'Datos Técnicos', margin, cursorY);
-      cursorY += 6;
-
-      const technicalBody = ficha.technical_data.map(item => [item.label, `${item.value} ${item.unit || ''}`]);
-      doc.autoTable({
-        head: [['Característica', 'Valor']],
-        body: technicalBody,
-        ...fichaTableStyles,
-        startY: cursorY,
-      });
-      cursorY = doc.autoTable.previous.finalY + 10;
-    }
-
-    if (ficha.components && ficha.components.length > 0) {
-      if (cursorY > pageHeight - 40) {
+      if (cursorY > pageHeight - 60) {
         doc.addPage();
-        cursorY = margin;
         await addFichaHeader();
       }
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(40);
-      doc.text(ficha.componentsTitle || 'Componentes', margin, cursorY);
-      cursorY += 6;
+
+      // Section Title removed to be cleaner, or keep it? 
+      // Let's keep it simple as per "Propuesta" style which is clean tables.
+      // But we need to distinguish Tech Data vs Components if both exist.
+      // Let's use the table header for that.
+
+      const technicalBody = ficha.technical_data.map(item => [item.label, `${item.value} ${item.unit || ''}`]);
+
+      doc.autoTable({
+        head: [[ficha.technicalDataTitle || 'Descripción', 'Valor']], // Use generic headers or specific? Image shows "Descripción | Potencia | Importe"
+        body: technicalBody,
+        startY: cursorY,
+        ...fichaTableStyles,
+      });
+      cursorY = doc.autoTable.previous.finalY + 20;
+    }
+
+    // Components Table
+    if (ficha.components && ficha.components.length > 0) {
+      if (cursorY > pageHeight - 60) {
+        doc.addPage();
+        await addFichaHeader();
+      }
 
       const componentsBody = ficha.components.map(item => [item.label, item.value]);
+
       doc.autoTable({
-        head: [['Componente', 'Marca/Valor']],
+        head: [[ficha.componentsTitle || 'Componente', 'Detalle']],
         body: componentsBody,
-        ...fichaTableStyles,
         startY: cursorY,
+        ...fichaTableStyles,
       });
-      cursorY = doc.autoTable.previous.finalY + 15;
+      cursorY = doc.autoTable.previous.finalY + 20;
     }
+
+    cursorY += 10; // Extra spacing between Fichas
   }
 
   addFooter(doc);
