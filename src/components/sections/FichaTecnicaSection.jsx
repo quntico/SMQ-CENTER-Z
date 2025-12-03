@@ -211,7 +211,16 @@ const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onConte
       updateAllContent(newContent);
       toast({ title: 'Imagen subida con éxito!' });
     } catch (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      console.error("Upload error:", error);
+      if (error.message && error.message.includes("Bucket not found")) {
+        toast({
+          title: 'Error de Configuración',
+          description: "No se encontró el bucket de almacenamiento 'quotation-files'. Por favor créalo en tu panel de Supabase como 'Public'.",
+          variant: 'destructive'
+        });
+      } else {
+        toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      }
     } finally {
       setIsUploading(false);
     }
