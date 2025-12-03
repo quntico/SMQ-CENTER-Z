@@ -122,6 +122,8 @@ const SidebarItem = ({
     }
   };
 
+  const hasSubItems = subItems && subItems.length > 0;
+
   const itemContent = (
     <div className="w-full">
       <div
@@ -156,7 +158,7 @@ const SidebarItem = ({
             >
               <Icon className={cn(
                 "w-5 h-5 led-blue-hover",
-                isActive && "scale-110 led-blue-text",
+                isActive && (hasSubItems ? "text-blue-600" : "scale-110 led-blue-text"),
                 isCollapsed && "mx-auto"
               )} />
             </div>
@@ -179,7 +181,9 @@ const SidebarItem = ({
               <span
                 className={cn(
                   "block truncate text-sm transition-all duration-200 select-none led-blue-hover",
-                  isActive ? "font-semibold led-blue-text" : "text-gray-300",
+                  isActive
+                    ? (hasSubItems ? "font-bold text-blue-600" : "font-semibold led-blue-text")
+                    : "text-gray-300",
                   isEditorMode && !isLocked && "hover:text-blue-400 cursor-text"
                 )}
                 onDoubleClick={(e) => {
@@ -195,7 +199,7 @@ const SidebarItem = ({
               </span>
             )}
             {/* Chevron for sub-items */}
-            {subItems && subItems.length > 0 && (
+            {hasSubItems && (
               <div className="mr-2 text-gray-500">
                 {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
               </div>
@@ -280,7 +284,7 @@ const SidebarItem = ({
       </div>
 
       {/* Sub-items Render */}
-      {!isCollapsed && isExpanded && subItems && subItems.length > 0 && (
+      {!isCollapsed && isExpanded && hasSubItems && (
         <div className="pl-9 space-y-1 mt-1">
           {subItems.map((subItem, idx) => {
             const SubIcon = subItem.icon && iconMap[subItem.icon] ? iconMap[subItem.icon] : iconMap['FileText'];
@@ -313,7 +317,7 @@ const SidebarItem = ({
       layout
       className={cn(
         "flex flex-col px-3 py-2 my-1 rounded-lg transition-all duration-200 border border-transparent led-blue-box-hover",
-        isActive && !isEditorMode && !subItems // Only highlight main box if no subitems or not expanded? Or keep it.
+        isActive && !isEditorMode && !hasSubItems // Only highlight main box if no subitems
           ? "led-blue-box"
           : "",
         isEditorMode && isActive && "bg-blue-500/10 border-blue-500/30", // Distinct style for active in editor
