@@ -271,7 +271,7 @@ export const generateFichasTecnicasPDF = async (fichas, quotationData) => {
         // User asked for 70% increase, but we are constrained by 20mm height.
         // We will make it fill 80% of the header height (16mm) which is visually prominent.
         const maxHeight = 16;
-        const maxWidth = 80; // Allow more width
+        const maxWidth = 100; // Allow more width (increased from 80)
 
         let logoWidth = imgProps.width;
         let logoHeight = imgProps.height;
@@ -334,18 +334,18 @@ export const generateFichasTecnicasPDF = async (fichas, quotationData) => {
     }
 
     // Ficha Title
-    doc.setFontSize(12); // Slightly smaller font
+    doc.setFontSize(11); // Slightly smaller font for thinner bar
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255); // White text for title bar
 
-    // Title Bar Background (Reduced height by 50% -> ~12mm)
-    const titleBarHeight = 12;
+    // Title Bar Background (Reduced height to 8mm)
+    const titleBarHeight = 8;
     doc.setFillColor(59, 130, 246); // Blue-500
     // Draw rect starting at cursorY
     doc.rect(margin, cursorY, pageWidth - (margin * 2), titleBarHeight, 'F');
 
-    // Text centered vertically in the bar
-    doc.text(ficha.tabTitle, margin + 5, cursorY + 8);
+    // Text centered vertically in the bar (approx +5.5 for 8mm height)
+    doc.text(ficha.tabTitle, margin + 5, cursorY + 5.5);
     cursorY += titleBarHeight + 10; // Move cursor past bar + spacing
 
     // Image
