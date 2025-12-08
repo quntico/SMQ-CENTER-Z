@@ -9,6 +9,7 @@ export default {
     sidebar: {
       menu: 'Menú',
       editorMode: 'Modo Editor',
+      cotizadorMode: 'Modo Cotizador',
       admin: 'Administrador',
       logout: 'Cerrar sesión',
       login: 'Acceso SMQ',
@@ -26,8 +27,10 @@ export default {
     sections: {
       portada: 'Home',
       descripcion: 'Descripción',
+      descripcionText: 'La línea {project} es una solución de producción continua que integra cuatro áreas fundamentales: mezclado, formado, enfriamiento y empaquetado. Cada área ha sido diseñada para trabajar en sincronía perfecta, garantizando una producción fluida y eficiente de barras de cereal de alta calidad.',
       capacidades: 'Capacidades',
       generales: 'Generales',
+      visionGeneral: 'VISIÓN GENERAL DEL<br />SISTEMA',
       proceso: 'Flujo del proceso',
       ficha: 'Fichas técnicas',
       propuesta: 'Propuesta económica',
@@ -46,8 +49,40 @@ export default {
       unnamed: 'Sin nombre',
       condiciones: 'Condiciones',
       admin: 'Admin',
+      portadaDetails: {
+        empresa: 'Empresa',
+        proyecto: 'Proyecto',
+        cliente: 'Cliente'
+      },
+      fichaDetails: {
+        datosTecnicos: 'Datos Técnicos',
+        componentes: 'Componentes',
+        tituloDefault: 'Ficha Principal'
+      },
+      propuestaDetails: {
+        titulo: 'PROPUESTA',
+        tituloDestacado: 'ECONÓMICA',
+        descripcion: 'Aquí puedes ver el desglose de la inversión. Marca o desmarca los componentes para ajustar el costo total.',
+        totalGrupo: 'Total del Grupo',
+        potenciaTotal: 'Potencia Total',
+        subtotal: 'Subtotal',
+        iva: 'I.V.A',
+        total: 'TOTAL',
+        tipoCambio: 'T.C. estimado',
+        fecha: 'Fecha',
+        desc: 'Descripción',
+        potencia: 'Potencia',
+        importe: 'Importe'
+      },
       servicios_adicionales: 'Servicios Adicionales',
       ventajas: 'VENTAJAS',
+      generalesDetails: {
+        specsTitle: 'Especificaciones Generales del Proyecto',
+        materiaPrima: 'Materia Prima',
+        specProducto: 'Especificaciones del Producto',
+        featuresTitle: 'Características Clave',
+        featuresSubtitle: 'Descubre los componentes esenciales que hacen de nuestra línea la mejor opción para tu producción.',
+      }
     },
     cronograma: {
       selectDate: 'Seleccione una fecha de inicio para visualizar el cronograma proyectado de su proyecto.',
@@ -135,6 +170,7 @@ export default {
     sidebar: {
       menu: 'Menu',
       editorMode: 'Editor Mode',
+      cotizadorMode: 'Quoter Mode',
       admin: 'Administrator',
       logout: 'Log Out',
       login: 'SMQ Access',
@@ -152,8 +188,10 @@ export default {
     sections: {
       portada: 'Home',
       descripcion: 'Description',
+      descripcionText: 'The {project} line is a continuous production solution that integrates four fundamental areas: mixing, forming, cooling, and packaging. Each area has been designed to work in perfect synchronization, ensuring a fluid and efficient production of high-quality cereal bars.',
       capacidades: 'Capabilities',
       generales: 'General',
+      visionGeneral: 'SYSTEM<br />OVERVIEW',
       proceso: 'Process Flow',
       ficha: 'Data Sheets',
       propuesta: 'Economic Proposal',
@@ -172,8 +210,40 @@ export default {
       unnamed: 'Unnamed',
       condiciones: 'Conditions',
       admin: 'Admin',
+      portadaDetails: {
+        empresa: 'Company',
+        proyecto: 'Project',
+        cliente: 'Client'
+      },
+      fichaDetails: {
+        datosTecnicos: 'Technical Data',
+        componentes: 'Components',
+        tituloDefault: 'Main Sheet'
+      },
+      propuestaDetails: {
+        titulo: 'PROPOSAL',
+        tituloDestacado: 'ECONOMIC',
+        descripcion: 'Here you can see the investment breakdown. Check or uncheck components to adjust the total cost.',
+        totalGrupo: 'Group Total',
+        potenciaTotal: 'Total Power',
+        subtotal: 'Subtotal',
+        iva: 'VAT',
+        total: 'TOTAL',
+        tipoCambio: 'Est. Exchange Rate',
+        fecha: 'Date',
+        desc: 'Description',
+        potencia: 'Power',
+        importe: 'Amount'
+      },
       servicios_adicionales: 'Additional Services',
       ventajas: 'Advantages',
+      generalesDetails: {
+        specsTitle: 'General Project Specifications',
+        materiaPrima: 'Raw Material',
+        specProducto: 'Product Specifications',
+        featuresTitle: 'Key Features',
+        featuresSubtitle: 'Discover the essential components that make our line the best choice for your production.',
+      }
     },
     cronograma: {
       selectDate: 'Select a start date to see the projected timeline for your project.',
@@ -261,6 +331,7 @@ export default {
     sidebar: {
       menu: 'Menu',
       editorMode: 'Modo Editor',
+      cotizadorMode: 'Modo Cotador',
       admin: 'Administrador',
       logout: 'Sair',
       login: 'Acesso SMQ',
@@ -278,8 +349,10 @@ export default {
     sections: {
       portada: 'Início',
       descripcion: 'Descrição',
+      descripcionText: 'A linha {project} é uma solução de produção contínua que integra quatro áreas fundamentais: mistura, moldagem, resfriamento e embalagem. Cada área foi projetada para trabalhar em perfeita sincronia, garantindo uma produção fluida e eficiente de barras de cereal de alta qualidade.',
       capacidades: 'Capacidades',
       generales: 'Geral',
+      visionGeneral: 'VISÃO GERAL DO<br />SISTEMA',
       proceso: 'Fluxo do Processo',
       ficha: 'Fichas Técnicas',
       propuesta: 'Proposta Econômica',
@@ -298,8 +371,40 @@ export default {
       unnamed: 'Sem nome',
       condiciones: 'Condições',
       admin: 'Admin',
+      portadaDetails: {
+        empresa: 'Empresa',
+        proyecto: 'Projeto',
+        cliente: 'Cliente'
+      },
+      fichaDetails: {
+        datosTecnicos: 'Dados Técnicos',
+        componentes: 'Componentes',
+        tituloDefault: 'Ficha Principal'
+      },
+      propuestaDetails: {
+        titulo: 'PROPOSTA',
+        tituloDestacado: 'ECONÔMICA',
+        descripcion: 'Aqui você pode ver o detalhamento do investimento. Marque ou desmarque componentes para ajustar o custo total.',
+        totalGrupo: 'Total do Grupo',
+        potenciaTotal: 'Potência Total',
+        subtotal: 'Subtotal',
+        iva: 'IVA',
+        total: 'TOTAL',
+        tipoCambio: 'Taxa de Câmbio Est.',
+        fecha: 'Data',
+        desc: 'Descrição',
+        potencia: 'Potência',
+        importe: 'Valor'
+      },
       servicios_adicionales: 'Serviços Adicionais',
       ventajas: 'Vantagens',
+      generalesDetails: {
+        specsTitle: 'Especificações Gerais do Projeto',
+        materiaPrima: 'Matéria-Prima',
+        specProducto: 'Especificações do Produto',
+        featuresTitle: 'Principais Características',
+        featuresSubtitle: 'Descubra os componentes essenciais que tornam nossa linha a melhor escolha para sua produção.',
+      }
     },
     cronograma: {
       selectDate: 'Selecione uma data de início para visualizar o cronograma projetado do seu projeto.',

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { motion } from 'framer-motion';
 import { UploadCloud, Save, X, Loader2, AlignLeft, AlignJustify } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
@@ -189,7 +190,21 @@ const DescripcionSection = ({
       }
     }
   };
-  const title = `VISIÓN GENERAL DEL<br />SISTEMA <span class="text-primary">${quotationData.project}</span>`;
+  const { t } = useLanguage();
+
+  const title = `${t('sections.visionGeneral')} <span class="text-primary">${quotationData.project}</span>`;
+
+  // Dynamic Translation Logic for P1
+  // We reconstruct the default Spanish string to check if the current content is "default" (un-edited).
+  // If it matches the default Spanish string, we assume we can safely translate it to the current language.
+  const spanishDefaultP1 = `La línea ${quotationData.project} es una solución de producción continua que integra cuatro áreas fundamentales: mezclado, formado, enfriamiento y empaquetado. Cada área ha sido diseñada para trabajar en sincronía perfecta, garantizando una producción fluida y eficiente de barras de cereal de alta calidad.`;
+
+  let p1ToUse = content.p1;
+  // Check if content matches the constructed Spanish default
+  if (p1ToUse === spanishDefaultP1) {
+    p1ToUse = t('sections.descripcionText', { project: quotationData.project });
+  }
+
   return <div className="min-h-screen w-full flex items-center justify-center py-16 sm:py-24 bg-black">
     <motion.div initial={{
       opacity: 0,
@@ -222,7 +237,7 @@ const DescripcionSection = ({
           }} />
           <div className="mt-8 space-y-6 text-gray-300 text-base leading-relaxed">
             <EditableText
-              value={content.p1}
+              value={p1ToUse}
               alignment={content.p1_align}
               onSave={(v, a) => handleSaveText('p1', v, a)}
               isEditorMode={isEditorMode}

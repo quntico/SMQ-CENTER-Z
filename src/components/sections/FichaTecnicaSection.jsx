@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 import SectionHeader from '@/components/SectionHeader';
@@ -56,6 +57,7 @@ const defaultContentSingle = {
 };
 
 const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onContentChange, activeTab: externalActiveTab }) => {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -572,7 +574,13 @@ const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onConte
       className="rounded-2xl border backdrop-blur-sm transition-colors duration-300 bg-gray-900/50 border-gray-800 p-6 sm:p-8"
     >
       <h2 className="font-bold text-primary mb-6 text-2xl sm:text-3xl">
-        {currentTabData[titleKey] || defaultTitle}
+        {(() => {
+          const rawTitle = currentTabData[titleKey] || defaultTitle;
+          // Check against Spanish defaults to enable dynamic translation
+          if (rawTitle === 'Datos Técnicos') return t('sections.fichaDetails.datosTecnicos');
+          if (rawTitle === 'Componentes') return t('sections.fichaDetails.componentes');
+          return rawTitle;
+        })()}
       </h2>
 
       <div className="space-y-4">
@@ -717,8 +725,8 @@ const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onConte
               transition={{ duration: 0.3 }}
             >
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-                {renderList('technical_data', 'technicalDataTitle', 'Datos Técnicos')}
-                {renderList('components', 'componentsTitle', 'Componentes')}
+                {renderList('technical_data', 'technicalDataTitle', t('sections.fichaDetails.datosTecnicos'))}
+                {renderList('components', 'componentsTitle', t('sections.fichaDetails.componentes'))}
               </div>
 
               <div className="mt-12">

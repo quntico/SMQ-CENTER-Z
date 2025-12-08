@@ -198,7 +198,7 @@ const Sidebar = ({
                     className={`w-full flex items-center p-3 rounded-lg transition-colors ${activeSection === 'cotizador_page' ? 'bg-blue-600 text-white' : 'hover:bg-gray-800'}`}
                   >
                     <Calculator size={20} />
-                    {!isCollapsed && <span className="ml-4 font-semibold">Modo Cotizador</span>}
+                    {!isCollapsed && <span className="ml-4 font-semibold">{t('sidebar.cotizadorMode')}</span>}
                   </button>
                   <button
                     onClick={() => setIsEditorMode(!isEditorMode)}

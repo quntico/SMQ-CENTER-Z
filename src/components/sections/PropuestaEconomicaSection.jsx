@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import {
   Save,
@@ -250,6 +251,7 @@ const PropuestaEconomicaSection = ({
   onContentChange,
   quotationData
 }) => {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState({});
@@ -490,12 +492,12 @@ const PropuestaEconomicaSection = ({
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Cliente: ${quotationData?.client || 'N/A'}`, margin, y);
+    doc.text(`${t('sections.propuestaDetails.cliente')}: ${quotationData?.client || 'N/A'}`, margin, y);
     y += 6;
-    doc.text(`Proyecto: ${quotationData?.project || 'N/A'}`, margin, y);
+    doc.text(`${t('sections.propuestaDetails.proyecto')}: ${quotationData?.project || 'N/A'}`, margin, y);
     y += 6;
     const dateStr = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
-    doc.text(`Fecha: ${dateStr}`, margin, y);
+    doc.text(`${t('sections.propuestaDetails.fecha')}: ${dateStr}`, margin, y);
     y += 15;
 
     const tableBody = activeItems.map((item, index) => [
@@ -506,7 +508,7 @@ const PropuestaEconomicaSection = ({
 
     doc.autoTable({
       startY: y,
-      head: [['Descripción', 'Potencia', 'Importe']],
+      head: [[t('sections.propuestaDetails.desc'), t('sections.propuestaDetails.potencia'), t('sections.propuestaDetails.importe')]],
       body: tableBody,
       theme: 'grid',
       headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255], fontStyle: 'bold' },
@@ -549,24 +551,24 @@ const PropuestaEconomicaSection = ({
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
     doc.setFont('helvetica', 'normal');
-    doc.text('Potencia Total:', labelX, currentY);
+    doc.text(`${t('sections.propuestaDetails.potenciaTotal')}:`, labelX, currentY);
     doc.text(`${totalKW.toFixed(2)} KW`, valueX, currentY, { align: 'right' });
     currentY += lineHeight;
 
     // Subtotal
-    doc.text('Subtotal:', labelX, currentY);
+    doc.text(`${t('sections.propuestaDetails.subtotal')}:`, labelX, currentY);
     doc.text(formatCurrency(subtotal, content.currency), valueX, currentY, { align: 'right' });
     currentY += lineHeight;
 
     // IVA
-    doc.text(`I.V.A (${content.taxRate}%):`, labelX, currentY);
+    doc.text(`${t('sections.propuestaDetails.iva')} (${content.taxRate}%):`, labelX, currentY);
     doc.text(formatCurrency(totalTax, content.currency), valueX, currentY, { align: 'right' });
     currentY += lineHeight + 2;
 
     // Total USD
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text(`TOTAL (${content.currency}):`, labelX, currentY);
+    doc.text(`${t('sections.propuestaDetails.total')} (${content.currency}):`, labelX, currentY);
     doc.setTextColor(37, 99, 235); // Blue
     doc.text(formatCurrency(totalUSD, content.currency), valueX, currentY, { align: 'right' });
     currentY += lineHeight + 4;
@@ -575,7 +577,7 @@ const PropuestaEconomicaSection = ({
     doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
     doc.setFont('helvetica', 'normal');
-    doc.text('T.C. estimado:', labelX, currentY);
+    doc.text(`${t('sections.propuestaDetails.tipoCambio')}:`, labelX, currentY);
     doc.text(`$${content.exchangeRate} MXN`, valueX, currentY, { align: 'right' });
     currentY += lineHeight;
 
@@ -583,7 +585,7 @@ const PropuestaEconomicaSection = ({
     doc.setFontSize(11);
     doc.setTextColor(0, 0, 0);
     doc.setFont('helvetica', 'bold');
-    doc.text('TOTAL (MXN):', labelX, currentY);
+    doc.text(`${t('sections.propuestaDetails.total')} (MXN):`, labelX, currentY);
     doc.text(formatCurrency(totalMXN, 'MXN'), valueX, currentY, { align: 'right' });
 
     // Add Footer to all pages
@@ -755,10 +757,20 @@ const PropuestaEconomicaSection = ({
 
       <div className="text-center mb-12 pt-8">
         <h1 className="text-4xl sm:text-6xl font-black tracking-tight mb-4 uppercase">
-          {content.pageTitle || 'PROPUESTA'} <span className="text-blue-500">{content.pageTitleHighlight || 'ECONÓMICA'}</span>
+          {(() => {
+            const rawTitle = content.pageTitle || 'PROPUESTA';
+            return rawTitle === 'PROPUESTA' ? t('sections.propuestaDetails.titulo') : rawTitle;
+          })()} <span className="text-blue-500">{(() => {
+            const rawTitleH = content.pageTitleHighlight || 'ECONÓMICA';
+            return rawTitleH === 'ECONÓMICA' ? t('sections.propuestaDetails.tituloDestacado') : rawTitleH;
+          })()}</span>
         </h1>
         <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-          {content.pageDescription || 'Aquí puedes ver el desglose de la inversión. Marca o desmarca los componentes para ajustar el costo total.'}
+          {(() => {
+            const rawDesc = content.pageDescription || 'Aquí puedes ver el desglose de la inversión. Marca o desmarca los componentes para ajustar el costo total.';
+            const defaultDesc = 'Aquí puedes ver el desglose de la inversión. Marca o desmarca los componentes para ajustar el costo total.';
+            return rawDesc === defaultDesc ? t('sections.propuestaDetails.descripcion') : rawDesc;
+          })()}
         </p>
       </div>
 
@@ -775,7 +787,7 @@ const PropuestaEconomicaSection = ({
                     <div>
                       <h3 className="text-xl font-bold text-white">{group.title}</h3>
                       <div className="text-sm text-blue-500 font-medium mt-1">
-                        Total del Grupo: {formatCurrency(groupTotal, content.currency)}
+                        {t('sections.propuestaDetails.totalGrupo')}: {formatCurrency(groupTotal, content.currency)}
                       </div>
                     </div>
                   </div>

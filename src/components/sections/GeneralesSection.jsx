@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 import SectionHeader from '@/components/SectionHeader';
@@ -142,19 +143,20 @@ const SpecCard = ({ iconName, title, value, onSave, onIconChange, isEditorMode }
 };
 
 const GeneralesSection = ({ sectionData, isEditorMode, onContentChange }) => {
+  const { t } = useLanguage(); // Ensure hook is called
   const { toast } = useToast();
 
   const defaultContent = {
-    specsTitle: 'Especificaciones Generales del Proyecto',
+    specsTitle: t('sections.generalesDetails.specsTitle'),
     specs: [
       { id: 'capacidad', icon: 'Zap', title: 'Capacidad de Fusión', value: 'Máximo: 600kg/h (dependiendo de la proporción de CaCO₃)' },
       { id: 'velocidad', icon: 'ArrowRight', title: 'Velocidad de Arrastre', value: 'Máxima: 2-4.5 metros/min' },
       { id: 'altura', icon: 'Gauge', title: 'Altura Central', value: '1 metro de altura operativa' },
     ],
-    materiaPrima: { title: 'Materia Prima', value: 'Resina PE, PE reciclado, lubricante, agente estabilizador, pigmento de titanio, agente anti-ultravioleta, pigmentos, etc.' },
-    specProducto: { title: 'Especificaciones del Producto', value: 'Capas: una capa | Ancho: 900mm | Espesor: 6mm' },
-    featuresTitle: 'Características Clave',
-    featuresSubtitle: 'Descubre los componentes esenciales que hacen de nuestra línea la mejor opción para tu producción.',
+    materiaPrima: { title: t('sections.generalesDetails.materiaPrima'), value: 'Resina PE, PE reciclado, lubricante, agente estabilizador, pigmento de titanio, agente anti-ultravioleta, pigmentos, etc.' },
+    specProducto: { title: t('sections.generalesDetails.specProducto'), value: 'Capas: una capa | Ancho: 900mm | Espesor: 6mm' },
+    featuresTitle: t('sections.generalesDetails.featuresTitle'),
+    featuresSubtitle: t('sections.generalesDetails.featuresSubtitle'),
     features: [
       { id: 1, title: 'Extrusión de Alta Precisión', items: ['Extrusora SJ120/38 con tornillo único', 'Capacidad de fusión hasta 600kg/h', 'Control de temperatura avanzado', 'Homogeneización perfecta del material'] },
       { id: 2, title: 'Sistema de Formado', items: ['Molde T de acero 5CrNiMo', 'Ancho efectivo 1300mm', 'Calibración automática', 'Enfriamiento controlado por agua'] },
@@ -163,7 +165,25 @@ const GeneralesSection = ({ sectionData, isEditorMode, onContentChange }) => {
     ],
   };
 
-  const content = { ...defaultContent, ...sectionData.content };
+  // Merge logic: prefer translation if DB content matches the Spanish default
+  const spanishDefaults = {
+    specsTitle: 'Especificaciones Generales del Proyecto',
+    materiaPrima: 'Materia Prima',
+    specProducto: 'Especificaciones del Producto',
+    featuresTitle: 'Características Clave',
+    featuresSubtitle: 'Descubre los componentes esenciales que hacen de nuestra línea la mejor opción para tu producción.',
+  };
+
+  const mergedContent = { ...defaultContent, ...sectionData.content };
+
+  // Override with translation if the current value matches the known Spanish default
+  if (mergedContent.specsTitle === spanishDefaults.specsTitle) mergedContent.specsTitle = t('sections.generalesDetails.specsTitle');
+  if (mergedContent.materiaPrima.title === spanishDefaults.materiaPrima) mergedContent.materiaPrima.title = t('sections.generalesDetails.materiaPrima');
+  if (mergedContent.specProducto.title === spanishDefaults.specProducto) mergedContent.specProducto.title = t('sections.generalesDetails.specProducto');
+  if (mergedContent.featuresTitle === spanishDefaults.featuresTitle) mergedContent.featuresTitle = t('sections.generalesDetails.featuresTitle');
+  if (mergedContent.featuresSubtitle === spanishDefaults.featuresSubtitle) mergedContent.featuresSubtitle = t('sections.generalesDetails.featuresSubtitle');
+
+  const content = mergedContent;
 
   const handleSave = (key, value) => {
     const newContent = { ...content, [key]: value };

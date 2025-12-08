@@ -32,20 +32,35 @@ export function LanguageProvider({ children }) {
     }
   };
 
-  const t = (key) => {
+  const t = (key, params = {}) => {
     const keys = key.split('.');
     let result = translations[language];
     for (const k of keys) {
       result = result?.[k];
       if (result === undefined) {
-        // Fallback to Spanish if key not found
-        let fallback = translations.es;
-        for (const fk of keys) {
-            fallback = fallback?.[fk];
-        }
-        return fallback || key;
+        break;
       }
     }
+
+    // Use fallback if result is undefined
+    if (result === undefined) {
+      let fallback = translations.es;
+      for (const fk of keys) {
+        fallback = fallback?.[fk];
+        if (fallback === undefined) break; // Fallback key also not found
+      }
+      result = fallback || key;
+    }
+
+    // Interpolation logic
+    if (typeof result === 'string' && Object.keys(params).length > 0) {
+      let text = result;
+      for (const [param, value] of Object.entries(params)) {
+        text = text.replace(new RegExp(`{${param}}`, 'g'), value);
+      }
+      return text;
+    }
+
     return result || key;
   };
 

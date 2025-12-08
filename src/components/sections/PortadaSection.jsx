@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { motion } from 'framer-motion';
 import { Building2, FolderKanban, User } from 'lucide-react';
 
@@ -18,20 +19,21 @@ const InfoCard = ({ icon: Icon, label, value, index }) => (
 );
 
 const PortadaSection = ({ quotationData }) => {
+  const { t } = useLanguage();
   const cardData = [
     {
       icon: Building2,
-      label: "Empresa",
+      label: t('sections.portadaDetails.empresa'),
       value: quotationData.company,
     },
     {
       icon: FolderKanban,
-      label: "Proyecto",
+      label: t('sections.portadaDetails.proyecto'),
       value: quotationData.project,
     },
     {
       icon: User,
-      label: "Cliente",
+      label: t('sections.portadaDetails.cliente'),
       value: quotationData.client,
     },
   ];
