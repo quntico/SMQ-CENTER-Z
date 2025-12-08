@@ -641,6 +641,11 @@ const FichaTecnicaSection = ({ sectionData, quotationData, isEditorMode, onConte
                     <DialogTitle className="text-lg font-bold flex items-center gap-2">
                       <LayoutGrid className="w-5 h-5 text-blue-500" />
                       Editor de Fichas Técnicas
+                      {isModeAdmin && (
+                        <span className="text-xs font-normal text-gray-500 ml-2 border border-gray-700 rounded px-2 py-0.5">
+                          Editando: {quotationData.project}
+                        </span>
+                      )}
                     </DialogTitle>
                     <div className="flex gap-2 mr-8">
                       <Button

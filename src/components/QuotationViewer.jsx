@@ -168,7 +168,7 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
     }
     setIsBannerVisible(false);
     clearTimeout(idleTimerRef.current);
-    const timeoutDuration = (displayData.idle_timeout || 10) * 1000;
+    const timeoutDuration = (displayData.idle_timeout || 4) * 1000;
     idleTimerRef.current = setTimeout(() => {
       setIsBannerVisible(true);
     }, timeoutDuration);
@@ -176,10 +176,28 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
 
   useEffect(() => {
     if (!displayData) return;
-    const initialTime = (displayData.initial_display_time || 5) * 1000;
+    const initialTime = (displayData.initial_display_time || 2) * 1000;
+    const idleTime = (displayData.idle_timeout || 4) * 1000;
+
+    // Initial Timer: Hide banner after initial time, BUT only if we aren't already "idle enough" to keep it shown
+    // or if we want to enforce a "blink" effect (Show -> Hide -> Show).
+    // Given the user wants it to "run", a blink (Show Intro -> Hide -> Show Screensaver) is a good feedback loop.
     initialDisplayTimerRef.current = setTimeout(() => {
-      if (!hasInteracted.current) setIsBannerVisible(false);
+      if (!hasInteracted.current) {
+        // If initial time is less than idle time, we hide it temporarily so it can "come back" at idle time.
+        // If initial time is longer than idle time, we should just keep it visible.
+        if (initialTime < idleTime) {
+          setIsBannerVisible(false);
+        }
+      }
     }, initialTime);
+
+    // Start Idle Timer on mount to ensure it shows up if user does nothing from start
+    idleTimerRef.current = setTimeout(() => {
+      if (!hasInteracted.current) {
+        setIsBannerVisible(true);
+      }
+    }, idleTime);
 
     const events = ['mousemove', 'keydown', 'scroll', 'touchstart'];
     events.forEach(event => window.addEventListener(event, resetIdleTimer));
@@ -385,6 +403,19 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
             isBannerVisible={isBannerVisible}
             isEditorMode={isEditorMode}
             isAdminView={isAdminView}
+            // Mobile Menu Props
+            sections={menuItems}
+            activeSection={activeSection}
+            onSectionSelect={handleSectionSelect}
+            onHomeClick={handleHomeClick}
+            isAdminAuthenticated={isAdminAuthenticated && isAdminView}
+            onAdminLogin={() => isAdminView && setShowPasswordPrompt(true)}
+            onAdminLogout={handleAdminLogout}
+            onCotizadorClick={() => handleSectionSelect('cotizador_page')}
+            onSubItemSelect={handleSubItemSelect}
+            activeTabMap={activeTabMap}
+            setIsEditorMode={setIsEditorMode}
+            onAdminClick={() => isAdminView && setShowAdminModal(true)}
           />
           <div id="main-content-scroll-area" className="flex-1 overflow-y-auto overflow-x-hidden pb-20 lg:pb-0">
             {renderActiveComponent()}

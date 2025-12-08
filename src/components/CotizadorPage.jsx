@@ -337,7 +337,7 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
                 </div>
               </div>
               {/* Header Row */}
-              <div className="grid grid-cols-[auto_1fr_220px_100px_auto] gap-3 px-2 mb-2 text-xs text-gray-500 font-medium uppercase tracking-wider">
+              <div className="grid grid-cols-[auto_1fr_150px_100px_auto] gap-3 px-2 mb-2 text-xs text-gray-500 font-medium uppercase tracking-wider">
                 <div className="w-10 text-center">Activo</div>
                 <div>Descripción</div>
                 <div>{viewMode === 'cost' ? 'Costo (USD)' : 'Precio Venta (USD)'}</div>
@@ -352,7 +352,7 @@ const CotizadorPage = ({ quotationData, activeTheme, setThemes }) => {
                   const sellingPrice = cost * factor;
 
                   return (
-                    <div key={opt.id} className={`grid grid-cols-[auto_1fr_220px_100px_auto] gap-3 items-center p-2 rounded-md transition-colors hover:bg-gray-800/30 ${!opt.isEnabled ? 'opacity-50' : ''}`}>
+                    <div key={opt.id} className={`grid grid-cols-[auto_1fr_150px_100px_auto] gap-3 items-center p-2 rounded-md transition-colors hover:bg-gray-800/30 ${!opt.isEnabled ? 'opacity-50' : ''}`}>
                       <div className="flex justify-center w-10">
                         <Switch
                           checked={opt.isEnabled}

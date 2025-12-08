@@ -31,23 +31,24 @@ const AdminLayout = () => {
         setAllThemes(themesObject);
 
         // Then, specifically fetch the home quotation
-        const { data: homeData, error: homeError } = await supabase
+        // Then, specifically fetch the home quotation
+        const { data: homeDataList, error: homeError } = await supabase
           .from('quotations')
           .select('*')
           .eq('is_home', true)
-          .single();
+          .limit(1);
 
-        if (homeError || !homeData) {
-            // If no home page is set, fallback to a default or show an error
-            const fallbackTheme = themesObject['NOVA'] || Object.values(themesObject)[0];
-            if (fallbackTheme) {
-                 setInitialQuotationData(fallbackTheme);
-                 console.warn(t('adminLayout.noHome'));
-            } else {
-                 throw new Error(t('adminLayout.noHomeNoFallback'));
-            }
+        if (homeError || !homeDataList || homeDataList.length === 0) {
+          // If no home page is set, fallback to a default or show an error
+          const fallbackTheme = themesObject['NOVA'] || Object.values(themesObject)[0];
+          if (fallbackTheme) {
+            setInitialQuotationData(fallbackTheme);
+            console.warn(t('adminLayout.noHome'));
+          } else {
+            throw new Error(t('adminLayout.noHomeNoFallback'));
+          }
         } else {
-            setInitialQuotationData(homeData);
+          setInitialQuotationData(homeDataList[0]);
         }
 
       } catch (e) {
@@ -64,9 +65,9 @@ const AdminLayout = () => {
   if (appIsLoading) {
     return <LoadingScreen message={t('adminLayout.loadingConfig')} />;
   }
-  
+
   if (error) {
-     return (
+    return (
       <div className="flex flex-col items-center justify-center h-screen bg-black text-white p-4 text-center">
         <h1 className="text-3xl font-bold text-red-500 mb-4">{t('adminLayout.loadErrorTitle')}</h1>
         <p className="text-lg mb-8 max-w-md">{error}</p>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Eraser, Settings, Palette, Scale, Upload, Image, Loader2, Minimize, Timer, PlaySquare, Clock, CheckCircle, Wrench, Ship, Truck, Copy, Link as LinkIcon, ClipboardCopy, Star, Home, MonitorSpeaker as Announce, MoveHorizontal, EyeOff, ExternalLink, QrCode } from 'lucide-react';
+import { X, Save, Eraser, Settings, Palette, Scale, Upload, Image, Loader2, Minimize, Timer, PlaySquare, Clock, CheckCircle, Wrench, Ship, Truck, Copy, Link as LinkIcon, ClipboardCopy, Star, Home, MonitorSpeaker as Announce, MoveHorizontal, EyeOff, ExternalLink, QrCode, RefreshCw } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -45,8 +45,8 @@ const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActive
         banner_text: themeDataFromApp.banner_text ?? '',
         banner_direction: themeDataFromApp.banner_direction ?? 'left-to-right',
         banner_scale: themeDataFromApp.banner_scale ?? 40,
-        idle_timeout: themeDataFromApp.idle_timeout ?? 10,
-        initial_display_time: themeDataFromApp.initial_display_time ?? 5,
+        idle_timeout: themeDataFromApp.idle_timeout ?? 4,
+        initial_display_time: themeDataFromApp.initial_display_time ?? 2,
         phase1_duration: themeDataFromApp.phase1_duration ?? 5,
         phase2_duration: themeDataFromApp.phase2_duration ?? 75,
         phase3_duration: themeDataFromApp.phase3_duration ?? 10,
@@ -272,7 +272,8 @@ const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActive
       });
       return;
     }
-    const link = `${window.location.origin}/cotizacion/${currentThemeData.slug}`;
+    // Always use production URL for sharing
+    const link = `https://www.smq1.site/cotizacion/${currentThemeData.slug}`;
     navigator.clipboard.writeText(link);
     toast({
       title: "¡Enlace copiado! 📋",
@@ -282,6 +283,7 @@ const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActive
 
   const handleOpenLink = () => {
     if (!currentThemeData.slug) return;
+    // Keep Open Link relative to current environment for previewing
     const link = `${window.location.origin}/cotizacion/${currentThemeData.slug}`;
     window.open(link, '_blank');
   };
@@ -323,6 +325,24 @@ const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActive
                   </Select>
                 </div>
                 <div><Label htmlFor="company" className="text-[#2563eb] mb-2 block font-semibold">{t('adminModal.company')}</Label><Input id="company" name="company" value={currentThemeData.company || ''} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb]" /></div>
+
+                {/* Start Page Switch */}
+                <div className="flex items-center justify-between p-3 rounded-lg border border-gray-800 bg-gray-900/50">
+                  <div className="flex items-center gap-2">
+                    <Home className={`w-5 h-5 ${currentThemeData.is_home ? 'text-green-500' : 'text-gray-400'}`} />
+                    <Label htmlFor="is_home" className="text-white cursor-pointer select-none font-semibold">
+                      {t('adminModal.setAsHomePage') || "Página de Inicio"}
+                    </Label>
+                  </div>
+                  <Switch
+                    id="is_home"
+                    checked={!!currentThemeData.is_home}
+                    onCheckedChange={handleSetAsHome}
+                    disabled={isSaving}
+                    className="data-[state=checked]:bg-green-500"
+                  />
+                </div>
+
                 <div><Label htmlFor="project" className="text-[#2563eb] mb-2 block font-semibold">{t('adminModal.project')}</Label><Input id="project" name="project" value={currentThemeData.project || ''} onChange={handleInputChange} disabled={isEditingTemplate} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb]" /></div>
                 <div><Label htmlFor="client" className="text-[#2563eb] mb-2 block font-semibold">{t('adminModal.client')}</Label><Input id="client" name="client" value={currentThemeData.client || ''} onChange={handleInputChange} disabled={isEditingTemplate} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb]" /></div>
                 <div><Label htmlFor="title" className="text-[#2563eb] mb-2 block font-semibold">{t('adminModal.title')}</Label><Input id="title" name="title" value={currentThemeData.title || ''} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb]" /></div>
@@ -364,25 +384,33 @@ const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActive
               </div>
             </div>
 
-            <div className="flex justify-between items-center gap-3 p-6 border-t border-gray-800 bg-[#0f0f0f]">
-              <div className="flex flex-wrap gap-3">
-                <Button variant="outline" onClick={onCloneClick} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10"><Copy className="h-4 w-4 mr-2" />{t('adminModal.clone')}</Button>
-                <Button variant="outline" onClick={handleCopyLink} disabled={isEditingTemplate} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10"><ClipboardCopy className="h-4 w-4 mr-2" />{t('adminModal.copyLink')}</Button>
-                <Button variant="outline" onClick={() => setShowQR(true)} disabled={isEditingTemplate} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10"><QrCode className="h-4 w-4 mr-2" />QR</Button>
-                <Button variant="outline" onClick={handleOpenLink} disabled={isEditingTemplate} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10"><ExternalLink className="h-4 w-4 mr-2" />Abrir</Button>
+            <div className="p-6 border-t border-gray-800 bg-[#0f0f0f] space-y-4">
+              {/* Primary Actions Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Button variant="outline" onClick={onCloneClick} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10 w-full"><Copy className="h-4 w-4 mr-2" />{t('adminModal.clone')}</Button>
+                <Button variant="outline" onClick={handleCopyLink} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10 w-full"><ClipboardCopy className="h-4 w-4 mr-2" />Link</Button>
+                <Button variant="outline" onClick={() => setShowQR(true)} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10 w-full"><QrCode className="h-4 w-4 mr-2" />QR</Button>
+                <Button variant="outline" onClick={handleOpenLink} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10 w-full"><ExternalLink className="h-4 w-4 mr-2" />Abrir</Button>
+              </div>
+
+              {/* Secondary Actions & System Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {!isEditingTemplate && (
-                  <Button variant="secondary" onClick={handleSetAsTemplate} className="bg-[#2563eb]/10 text-[#2563eb] hover:bg-[#2563eb]/20 border border-[#2563eb]/20"><Star className="h-4 w-4 mr-2" />{t('adminModal.setAsTemplate')}</Button>
+                  <Button variant="secondary" onClick={handleSetAsTemplate} className="bg-[#2563eb]/10 text-[#2563eb] hover:bg-[#2563eb]/20 border border-[#2563eb]/20 w-full"><Star className="h-4 w-4 mr-2" />{t('adminModal.setAsTemplate')}</Button>
                 )}
                 {!isEditingHome && (
-                  <Button variant="secondary" onClick={handleSetAsHome} className="bg-[#2563eb]/10 text-[#2563eb] hover:bg-[#2563eb]/20 border border-[#2563eb]/20"><Home className="h-4 w-4 mr-2" />{t('adminModal.setAsHomePage')}</Button>
+                  <Button variant="secondary" onClick={handleSetAsHome} className="bg-[#2563eb]/10 text-[#2563eb] hover:bg-[#2563eb]/20 border border-[#2563eb]/20 w-full"><Home className="h-4 w-4 mr-2" />{t('adminModal.setAsHomePage')}</Button>
                 )}
                 {isEditingTemplate && (
-                  <Button variant="secondary" onClick={handleGoToTemplate} disabled className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20"><Star className="h-4 w-4 mr-2 text-yellow-500" />{t('adminModal.editingTemplate')}</Button>
+                  <Button variant="secondary" onClick={handleGoToTemplate} disabled className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 w-full"><Star className="h-4 w-4 mr-2 text-yellow-500" />{t('adminModal.editingTemplate')}</Button>
                 )}
+                <Button variant="outline" onClick={() => window.location.href = window.location.href.split('?')[0] + '?t=' + new Date().getTime()} className="border-red-500 text-red-500 hover:bg-red-500/10 w-full"><RefreshCw className="h-4 w-4 mr-2" />Forzar Actualización</Button>
               </div>
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={handleReset} disabled={isSaving} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10"><Eraser className="h-4 w-4 mr-2" />{t('adminModal.reset')}</Button>
-                <Button onClick={handleSave} disabled={isSaving || isUploadingLogo || isUploadingFavicon} className="bg-[#2563eb] text-white hover:bg-[#1d4ed8] shadow-[0_0_15px_rgba(37,99,235,0.4)]">{isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}{t('adminModal.saveChanges')}</Button>
+
+              {/* Save & Reset Actions */}
+              <div className="flex gap-3 pt-2 border-t border-gray-800">
+                <Button variant="outline" onClick={handleReset} disabled={isSaving} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10 flex-1"><Eraser className="h-4 w-4 mr-2" />{t('adminModal.reset')}</Button>
+                <Button onClick={handleSave} disabled={isSaving || isUploadingLogo || isUploadingFavicon} className="bg-[#2563eb] text-white hover:bg-[#1d4ed8] shadow-[0_0_15px_rgba(37,99,235,0.4)] flex-[2]">{isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}{t('adminModal.saveChanges')}</Button>
               </div>
             </div>
           </motion.div>
@@ -393,9 +421,14 @@ const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActive
           <div className="bg-white p-8 rounded-xl flex flex-col items-center gap-6 shadow-2xl" onClick={e => e.stopPropagation()}>
             <h3 className="text-2xl font-bold text-black">Código QR</h3>
             <div className="p-4 bg-white rounded-lg shadow-inner border border-gray-200">
-              <QRCodeCanvas value={`${window.location.origin}/cotizacion/${currentThemeData.slug}`} size={256} level="H" includeMargin={true} />
+              <QRCodeCanvas value={`https://www.smq1.site/cotizacion/${currentThemeData.slug}`} size={256} level="H" includeMargin={true} />
             </div>
-            <p className="text-sm text-gray-600 font-medium">{currentThemeData.project}</p>
+            <div className="text-center">
+              <p className="text-sm text-gray-600 font-medium mb-1">{currentThemeData.project}</p>
+              <p className="text-xs text-gray-400 break-all max-w-xs">
+                {`https://www.smq1.site/cotizacion/${currentThemeData.slug || 'SIN-SLUG'}`}
+              </p>
+            </div>
             <Button onClick={() => setShowQR(false)} className="w-full">Cerrar</Button>
           </div>
         </div>
