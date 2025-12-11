@@ -1,5 +1,5 @@
 import * as LucideIcons from 'lucide-react';
-import { customIcons } from '@/components/icons/CustomExtrusionIcons';
+// import { customIcons } from '@/components/icons/CustomExtrusionIcons';
 
 // Combine Lucide icons and Custom icons
 export const iconMap = {
@@ -11,7 +11,7 @@ export const iconMap = {
       key[0] === key[0].toUpperCase()
     )
   ),
-  ...customIcons
+  // ...customIcons
 };
 
 const industrialKeywords = [
