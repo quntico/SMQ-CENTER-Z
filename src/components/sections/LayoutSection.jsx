@@ -223,6 +223,14 @@ const LayoutSection = ({ sectionData = {}, isEditorMode, onContentChange }) => {
     );
   };
 
+  // Local state for video URL to prevent freezing on typing (debounce/onBlur pattern)
+  const [localVideoUrl, setLocalVideoUrl] = useState(sectionData.content?.videoUrl || '');
+
+  // Sync local state when prop changes (external updates)
+  React.useEffect(() => {
+    setLocalVideoUrl(sectionData.content?.videoUrl || '');
+  }, [sectionData.content?.videoUrl]);
+
   return (
     <div className="py-16 sm:py-24 bg-black text-white min-h-screen">
       <SectionHeader
@@ -286,8 +294,9 @@ const LayoutSection = ({ sectionData = {}, isEditorMode, onContentChange }) => {
                 <div className="w-full max-w-lg">
                   <Input
                     placeholder="Pega aquí la URL de YouTube (ej: https://www.youtube.com/watch?v=...)"
-                    value={content.videoUrl || ''}
-                    onChange={(e) => updateContent({ videoUrl: e.target.value })}
+                    value={localVideoUrl}
+                    onChange={(e) => setLocalVideoUrl(e.target.value)}
+                    onBlur={() => updateContent({ videoUrl: localVideoUrl })}
                     className="bg-gray-900/50 border-gray-700 text-white text-center placeholder:text-gray-600"
                   />
                   <p className="text-xs text-gray-500 mt-2">
