@@ -2,25 +2,20 @@ import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'; // Import Tabs
-import { iconMap, iconList, extrusionIcons } from '@/lib/iconMap'; // Import extrusionIcons
+import { iconMap, iconList } from '@/lib/iconMap';
 import { Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const IconPicker = ({ value, onChange, trigger, children, isEditorMode }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('extrusion'); // Default to Extrusion
 
   const filteredIcons = useMemo(() => {
-    // Select source list based on category
-    const sourceList = category === 'extrusion' ? extrusionIcons : iconList;
-
-    if (!search) return sourceList.slice(0, 2000);
-    return sourceList.filter(name =>
+    if (!search) return iconList.slice(0, 2000);
+    return iconList.filter(name =>
       name.toLowerCase().includes(search.toLowerCase())
     ).slice(0, 2000);
-  }, [search, category]);
+  }, [search]);
 
   if (!isEditorMode) {
     return trigger || children;
@@ -42,18 +37,10 @@ const IconPicker = ({ value, onChange, trigger, children, isEditorMode }) => {
           <DialogTitle className="text-blue-500">Seleccionar Icono</DialogTitle>
         </DialogHeader>
 
-        {/* Category Tabs */}
-        <Tabs defaultValue="extrusion" value={category} onValueChange={setCategory} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-gray-900">
-            <TabsTrigger value="extrusion">Extrusión</TabsTrigger>
-            <TabsTrigger value="all">Todos</TabsTrigger>
-          </TabsList>
-        </Tabs>
-
         <div className="relative my-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder={category === 'extrusion' ? "Buscar en Extrusión..." : "Buscar todos los iconos..."}
+            placeholder="Buscar icono (ej: home, user, star)..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 bg-gray-900 border-gray-700 focus:border-blue-500 text-white"
@@ -71,7 +58,6 @@ const IconPicker = ({ value, onChange, trigger, children, isEditorMode }) => {
                 const IconComponent = iconMap[iconName];
                 const isSelected = value === iconName;
 
-                // Skip if icon not found (safety)
                 if (!IconComponent) return null;
 
                 return (
