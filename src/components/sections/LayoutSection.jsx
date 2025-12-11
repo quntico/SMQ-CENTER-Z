@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Loader2, Video, Image as ImageIcon, FileVideo } from 'lucide-react';
+import { Upload, Loader2, Video, Image as ImageIcon, FileVideo, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
@@ -70,6 +70,7 @@ const LayoutSection = ({ sectionData = {}, isEditorMode, onContentChange }) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    console.log(`[LayoutSection] Uploading ${file.name} to ${bucketName}/${folderPath} for type ${type}`);
     setUploadingState(prev => ({ ...prev, [type]: true }));
 
     try {
@@ -77,17 +78,25 @@ const LayoutSection = ({ sectionData = {}, isEditorMode, onContentChange }) => {
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = folderPath ? `${folderPath}/${fileName}` : fileName;
 
-      const { error: uploadError } = await supabase.storage
+      const { data, error: uploadError } = await supabase.storage
         .from(bucketName)
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("[LayoutSection] Supabase Upload Error:", uploadError);
+        throw uploadError;
+      }
+      console.log("[LayoutSection] Upload Data:", data);
 
       const { data: { publicUrl } } = supabase.storage
         .from(bucketName)
         .getPublicUrl(filePath);
 
-      updateContent({ [`${type}Url`]: publicUrl });
+      console.log("[LayoutSection] Generated Public URL:", publicUrl);
+
+      const newContent = { [`${type}Url`]: publicUrl };
+      console.log("[LayoutSection] Calling updateContent with:", newContent);
+      updateContent(newContent);
 
       toast({
         title: "Imagen subida",
@@ -131,15 +140,33 @@ const LayoutSection = ({ sectionData = {}, isEditorMode, onContentChange }) => {
             )}
           />
           {isEditorMode && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs text-gray-400 hover:text-white"
-              onClick={() => inputRef.current?.click()}
-            >
-              <Upload className="w-3 h-3 mr-2" />
-              {url ? 'Cambiar' : 'Subir'}
-            </Button>
+            <>
+              {url && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-red-500 hover:text-red-400 hover:bg-red-900/20 mr-2"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm('¿Estás seguro de querer borrar esta imagen?')) {
+                      updateContent({ [`${type}Url`]: '' });
+                    }
+                  }}
+                >
+                  <Trash2 className="w-3 h-3 mr-2" />
+                  Borrar
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs text-gray-400 hover:text-white"
+                onClick={() => inputRef.current?.click()}
+              >
+                <Upload className="w-3 h-3 mr-2" />
+                {url ? 'Cambiar' : 'Subir'}
+              </Button>
+            </>
           )}
         </div>
 
