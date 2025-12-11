@@ -1,13 +1,18 @@
 import * as LucideIcons from 'lucide-react';
+import { customIcons } from '@/components/icons/CustomExtrusionIcons';
 
-export const iconMap = Object.fromEntries(
-  Object.entries(LucideIcons).filter(([key, value]) =>
-    key !== 'createLucideIcon' &&
-    key !== 'default' &&
-    (typeof value === 'object' || typeof value === 'function') &&
-    key[0] === key[0].toUpperCase()
-  )
-);
+// Combine Lucide icons and Custom icons
+export const iconMap = {
+  ...Object.fromEntries(
+    Object.entries(LucideIcons).filter(([key, value]) =>
+      key !== 'createLucideIcon' &&
+      key !== 'default' &&
+      (typeof value === 'object' || typeof value === 'function') &&
+      key[0] === key[0].toUpperCase()
+    )
+  ),
+  ...customIcons
+};
 
 const industrialKeywords = [
   'factory', 'industry', 'building', 'warehouse',
@@ -24,6 +29,33 @@ const industrialKeywords = [
   'shield', 'lock', 'key', 'unlock', 'security',
   'user', 'users', 'group', 'person',
   'arrow', 'chevron', 'play', 'pause', 'stop', 'circle', 'square', 'triangle'
+];
+
+// Special category for Extrusion
+export const extrusionIcons = [
+  // Custom Specialized Icons
+  'ExtruderMachine', 'Screw', 'DieHeadFlat', 'DieHeadCircular', 'Hopper', 'Rollers', 'Puller', 'Cutter', 'Winder', 'ControlPanel', 'GearBox', 'Heater',
+
+  // Machinery & Mechanics
+  'Settings', 'Cog', 'Cogs', 'Wrench', 'Hammer', 'Construction', 'Factory', 'HardHat', 'Drill', 'Axe', 'Nut', 'Bolt', 'Anchor',
+
+  // Power & Electricity
+  'Zap', 'ZapOff', 'Power', 'Plug', 'Battery', 'BatteryCharging', 'Flashlight', 'Lightbulb',
+
+  // Flow & Process
+  'Activity', 'Pulse', 'Waves', 'Wind', 'ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'RefreshCcw', 'RotateCw', 'GitBranch', 'GitMerge', 'Workflow', 'Move',
+
+  // Control & Measurement
+  'Gauge', 'Thermometer', 'Timer', 'Watch', 'Hourglass', 'Scale', 'Ruler', 'Maximize', 'Minimize', 'Signal', 'Wifi',
+
+  // Material & Physics
+  'Droplet', 'Flame', 'Snowflake', 'Sun', 'Orbit', 'Atom', 'Layers', 'Box', 'Package', 'Container', 'Circle', 'Disc', 'Cylinder', 'Square', 'Triangle',
+
+  // Data & Electronics
+  'Cpu', 'Server', 'Database', 'HardDrive', 'Network', 'Monitor', 'Tablet', 'Smartphone', 'Bot', 'Brain',
+
+  // Safety & Status
+  'Shield', 'ShieldCheck', 'Lock', 'Unlock', 'AlertTriangle', 'AlertCircle', 'Info', 'Check', 'CheckCircle', 'X', 'XCircle'
 ];
 
 const allIcons = Object.keys(iconMap);
