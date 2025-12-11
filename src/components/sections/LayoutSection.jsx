@@ -21,16 +21,16 @@ const LayoutSection = ({ sectionData = {}, isEditorMode, onContentChange }) => {
   const content = {
     topViewUrl: sectionData.content?.topViewUrl || DEFAULT_TOP_IMAGE,
     topViewTitle: sectionData.content?.topViewTitle || 'Vista Superior',
-    
+
     sideViewUrl: sectionData.content?.sideViewUrl || '',
     sideViewTitle: sectionData.content?.sideViewTitle || 'Vista Lateral',
-    
+
     isoViewUrl: sectionData.content?.isoViewUrl || DEFAULT_ISO_IMAGE,
     isoViewTitle: sectionData.content?.isoViewTitle || 'Vista Isométrica',
-    
+
     videoUrl: sectionData.content?.videoUrl || '',
     videoTitle: sectionData.content?.videoTitle || 'Animación del Proyecto',
-    
+
     ...sectionData.content
   };
 
@@ -43,24 +43,24 @@ const LayoutSection = ({ sectionData = {}, isEditorMode, onContentChange }) => {
   const getEmbedUrl = (url) => {
     if (!url) return '';
     try {
-        // Already an embed link
-        if (url.includes('youtube.com/embed/')) return url;
-        
-        let videoId = '';
-        // Standard watch URL
-        if (url.includes('watch?v=')) {
-            videoId = url.split('watch?v=')[1].split('&')[0];
-        } 
-        // Shortened URL
-        else if (url.includes('youtu.be/')) {
-            videoId = url.split('youtu.be/')[1].split('?')[0];
-        }
+      // Already an embed link
+      if (url.includes('youtube.com/embed/')) return url;
 
-        if (videoId) {
-            return `https://www.youtube.com/embed/${videoId}`;
-        }
+      let videoId = '';
+      // Standard watch URL
+      if (url.includes('watch?v=')) {
+        videoId = url.split('watch?v=')[1].split('&')[0];
+      }
+      // Shortened URL
+      else if (url.includes('youtu.be/')) {
+        videoId = url.split('youtu.be/')[1].split('?')[0];
+      }
+
+      if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
     } catch (e) {
-        console.error("Error parsing video URL", e);
+      console.error("Error parsing video URL", e);
     }
     // Return original if no known pattern matched (might be valid iframe src already)
     return url;
@@ -88,7 +88,7 @@ const LayoutSection = ({ sectionData = {}, isEditorMode, onContentChange }) => {
         .getPublicUrl(filePath);
 
       updateContent({ [`${type}Url`]: publicUrl });
-      
+
       toast({
         title: "Imagen subida",
         description: "La imagen se ha guardado correctamente.",
@@ -114,7 +114,7 @@ const LayoutSection = ({ sectionData = {}, isEditorMode, onContentChange }) => {
     const title = content[`${type}Title`];
 
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
@@ -131,9 +131,9 @@ const LayoutSection = ({ sectionData = {}, isEditorMode, onContentChange }) => {
             )}
           />
           {isEditorMode && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="text-xs text-gray-400 hover:text-white"
               onClick={() => inputRef.current?.click()}
             >
@@ -143,7 +143,7 @@ const LayoutSection = ({ sectionData = {}, isEditorMode, onContentChange }) => {
           )}
         </div>
 
-        <div 
+        <div
           className={cn(
             "relative aspect-video bg-gray-900/50 rounded-xl overflow-hidden border border-gray-800 transition-all duration-300 group shadow-lg",
             isEditorMode && "cursor-pointer hover:border-blue-500/50 hover:shadow-blue-900/20"
@@ -157,11 +157,11 @@ const LayoutSection = ({ sectionData = {}, isEditorMode, onContentChange }) => {
           ) : null}
 
           {url ? (
-              <img 
-                src={url} 
-                alt={title} 
-                className="w-full h-full object-contain p-2" 
-              />
+            <img
+              src={url}
+              alt={title}
+              className="w-full h-full object-contain p-2"
+            />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center text-gray-600 gap-3">
               <Icon className="w-16 h-16 opacity-20" />
@@ -183,7 +183,7 @@ const LayoutSection = ({ sectionData = {}, isEditorMode, onContentChange }) => {
             </div>
           )}
 
-          <input 
+          <input
             type="file"
             ref={inputRef}
             className="hidden"
@@ -198,38 +198,38 @@ const LayoutSection = ({ sectionData = {}, isEditorMode, onContentChange }) => {
 
   return (
     <div className="py-16 sm:py-24 bg-black text-white min-h-screen">
-      <SectionHeader 
-        sectionData={sectionData} 
+      <SectionHeader
+        sectionData={sectionData}
         isEditorMode={isEditorMode}
         onContentChange={updateContent}
       />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        
+
         {/* 1. Layout Views Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 mb-20">
-          <LayoutViewCard 
+          <LayoutViewCard
             type="topView"
             titleKey="topViewTitle"
-            bucket="layout-images"
+            bucket="logos-bucket"
             folder="layout-superior"
             accept="image/*"
             icon={ImageIcon}
           />
-          
-          <LayoutViewCard 
+
+          <LayoutViewCard
             type="sideView"
             titleKey="sideViewTitle"
-            bucket="layout-images"
+            bucket="logos-bucket"
             folder="layout-lateral"
             accept="image/*"
             icon={ImageIcon}
           />
-          
-          <LayoutViewCard 
+
+          <LayoutViewCard
             type="isoView"
             titleKey="isoViewTitle"
-            bucket="layout-images"
+            bucket="logos-bucket"
             folder="layout-isometrico"
             accept="image/*"
             icon={ImageIcon}
@@ -238,62 +238,62 @@ const LayoutSection = ({ sectionData = {}, isEditorMode, onContentChange }) => {
 
         {/* 2. Video Section - Specialized for YouTube Input */}
         <div className="border-t border-gray-800 pt-16">
-           <div className="max-w-4xl mx-auto">
-              <div className="flex flex-col items-center mb-8 justify-center text-center">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="p-3 bg-blue-500/10 rounded-full">
-                        <Video className="w-6 h-6 text-blue-500" />
-                    </div>
-                    <EditableField
-                        value={content.videoTitle}
-                        onSave={(val) => updateContent({ videoTitle: val })}
-                        isEditorMode={isEditorMode}
-                        className={cn(
-                            "text-2xl font-bold text-white",
-                            isEditorMode && "border border-transparent hover:border-gray-700 rounded px-2"
-                        )}
-                    />
+          <div className="max-w-4xl mx-auto">
+            <div className="flex flex-col items-center mb-8 justify-center text-center">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-blue-500/10 rounded-full">
+                  <Video className="w-6 h-6 text-blue-500" />
                 </div>
-                
-                {isEditorMode && (
-                    <div className="w-full max-w-lg">
-                        <Input 
-                            placeholder="Pega aquí la URL de YouTube (ej: https://www.youtube.com/watch?v=...)"
-                            value={content.videoUrl || ''}
-                            onChange={(e) => updateContent({ videoUrl: e.target.value })}
-                            className="bg-gray-900/50 border-gray-700 text-white text-center placeholder:text-gray-600"
-                        />
-                        <p className="text-xs text-gray-500 mt-2">
-                            Se actualizará automáticamente la vista previa al pegar el enlace.
-                        </p>
-                    </div>
-                )}
+                <EditableField
+                  value={content.videoTitle}
+                  onSave={(val) => updateContent({ videoTitle: val })}
+                  isEditorMode={isEditorMode}
+                  className={cn(
+                    "text-2xl font-bold text-white",
+                    isEditorMode && "border border-transparent hover:border-gray-700 rounded px-2"
+                  )}
+                />
               </div>
 
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="relative aspect-video bg-gray-900/50 rounded-xl overflow-hidden border border-gray-800 shadow-2xl"
-              >
-                {content.videoUrl ? (
-                    <iframe
-                        src={getEmbedUrl(content.videoUrl)}
-                        title={content.videoTitle}
-                        className="w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                    />
-                ) : (
-                     <div className="w-full h-full flex flex-col items-center justify-center text-gray-600 gap-3">
-                        <FileVideo className="w-16 h-16 opacity-20" />
-                        <span className="text-sm font-medium opacity-50">
-                            {isEditorMode ? 'Ingresa una URL arriba para ver el video' : 'No hay video configurado'}
-                        </span>
-                    </div>
-                )}
-              </motion.div>
-           </div>
+              {isEditorMode && (
+                <div className="w-full max-w-lg">
+                  <Input
+                    placeholder="Pega aquí la URL de YouTube (ej: https://www.youtube.com/watch?v=...)"
+                    value={content.videoUrl || ''}
+                    onChange={(e) => updateContent({ videoUrl: e.target.value })}
+                    className="bg-gray-900/50 border-gray-700 text-white text-center placeholder:text-gray-600"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Se actualizará automáticamente la vista previa al pegar el enlace.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="relative aspect-video bg-gray-900/50 rounded-xl overflow-hidden border border-gray-800 shadow-2xl"
+            >
+              {content.videoUrl ? (
+                <iframe
+                  src={getEmbedUrl(content.videoUrl)}
+                  title={content.videoTitle}
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-gray-600 gap-3">
+                  <FileVideo className="w-16 h-16 opacity-20" />
+                  <span className="text-sm font-medium opacity-50">
+                    {isEditorMode ? 'Ingresa una URL arriba para ver el video' : 'No hay video configurado'}
+                  </span>
+                </div>
+              )}
+            </motion.div>
+          </div>
         </div>
 
       </div>
