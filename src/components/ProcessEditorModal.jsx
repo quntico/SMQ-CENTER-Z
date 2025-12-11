@@ -12,8 +12,10 @@ const ProcessEditorModal = ({ isOpen, onClose, initialSteps, onSave }) => {
     const [editingStepId, setEditingStepId] = useState(null);
 
     useEffect(() => {
-        setSteps(initialSteps || []);
-    }, [initialSteps, isOpen]);
+        if (isOpen) {
+            setSteps(initialSteps || []);
+        }
+    }, [isOpen]);
 
     const handleMoveStep = (index, direction) => {
         if (direction === 'up' && index === 0) return;
@@ -90,8 +92,8 @@ const ProcessEditorModal = ({ isOpen, onClose, initialSteps, onSave }) => {
                                 <div
                                     key={step.id}
                                     className={`p-3 rounded-lg border cursor-pointer transition-all flex items-center gap-2 ${editingStepId === step.id
-                                            ? 'bg-blue-900/20 border-blue-500'
-                                            : 'bg-gray-900 border-gray-800 hover:border-gray-700'
+                                        ? 'bg-blue-900/20 border-blue-500'
+                                        : 'bg-gray-900 border-gray-800 hover:border-gray-700'
                                         }`}
                                     onClick={() => setEditingStepId(step.id)}
                                 >

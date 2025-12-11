@@ -7,70 +7,56 @@ import { iconMap } from '@/lib/iconMap';
 import ProcessEditorModal from '@/components/ProcessEditorModal';
 import { Button } from '@/components/ui/button';
 
+const defaultContent = {
+  steps: [
+    {
+      id: 'extrusion',
+      title: '01 - Extrusión de Alta Precisión',
+      icon: 'Layers',
+      details: [
+        '- Extrusora SJ120/38 con tornillo único',
+        '- Capacidad de fusión hasta 600kg/h',
+        '- Control de temperatura avanzado',
+        '- Homogeneización perfecta del material',
+      ],
+    },
+    {
+      id: 'formado',
+      title: '02 - Sistema de Formado',
+      icon: 'LayoutTemplate',
+      details: [
+        '- Molde T de acero 5CrNiMo',
+        '- Ancho efectivo 1300mm',
+        '- Calibración automática',
+        '- Enfriamiento controlado por agua',
+      ],
+    },
+    {
+      id: 'corte',
+      title: '03 - Corte y Acabado',
+      icon: 'Scissors',
+      details: [
+        '- Cortadora de precisión automática',
+        '- Dimensiones exactas 900mm x 6mm',
+        '- Sistema neumático de ajuste',
+        '- Control de velocidad variable',
+      ],
+    },
+    {
+      id: 'apilado',
+      title: '04 - Apilado Automático',
+      icon: 'Package',
+      details: [
+        '- Sistema de apilado de 3 metros',
+        '- Organización automática',
+        '- Capacidad 200-300 piezas por hora',
+        '- Listo para empaque inmediato',
+      ],
+    },
+  ],
+};
+
 const ProcesoSection = ({ sectionData, isEditorMode, onContentChange }) => {
-  const { toast } = useToast();
-  const timelineRef = useRef(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const { scrollYProgress } = useScroll({
-    target: timelineRef,
-    offset: ["start end", "end start"]
-  });
-
-  const scaleY = useSpring(scrollYProgress, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001
-  });
-
-  const defaultContent = {
-    steps: [
-      {
-        id: 'extrusion',
-        title: '01 - Extrusión de Alta Precisión',
-        icon: 'Layers',
-        details: [
-          '- Extrusora SJ120/38 con tornillo único',
-          '- Capacidad de fusión hasta 600kg/h',
-          '- Control de temperatura avanzado',
-          '- Homogeneización perfecta del material',
-        ],
-      },
-      {
-        id: 'formado',
-        title: '02 - Sistema de Formado',
-        icon: 'LayoutTemplate',
-        details: [
-          '- Molde T de acero 5CrNiMo',
-          '- Ancho efectivo 1300mm',
-          '- Calibración automática',
-          '- Enfriamiento controlado por agua',
-        ],
-      },
-      {
-        id: 'corte',
-        title: '03 - Corte y Acabado',
-        icon: 'Scissors',
-        details: [
-          '- Cortadora de precisión automática',
-          '- Dimensiones exactas 900mm x 6mm',
-          '- Sistema neumático de ajuste',
-          '- Control de velocidad variable',
-        ],
-      },
-      {
-        id: 'apilado',
-        title: '04 - Apilado Automático',
-        icon: 'Package',
-        details: [
-          '- Sistema de apilado de 3 metros',
-          '- Organización automática',
-          '- Capacidad 200-300 piezas por hora',
-          '- Listo para empaque inmediato',
-        ],
-      },
-    ],
-  };
 
   const content = { ...defaultContent, ...sectionData.content };
   const steps = content.steps || defaultContent.steps;
