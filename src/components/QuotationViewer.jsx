@@ -139,62 +139,13 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
   const displayData = previewData ? { ...quotationData, ...previewData } : quotationData;
 
   useEffect(() => {
-    // Lazy Loading Logic
-    const loadProjectDetails = async () => {
-      // Check if we already have full data (sections_config) or if we are loading
-      const currentTheme = themes[initialQuotationData.theme_key];
-
-      // If we have the object but it's missing the heavy 'sections_config', it means it was just a metadata stub
-      if (currentTheme && !currentTheme.sections_config && !currentTheme.is_loading_details) {
-        try {
-          // Mark as loading to prevent double fetch
-          setThemes(prev => ({
-            ...prev,
-            [initialQuotationData.theme_key]: { ...prev[initialQuotationData.theme_key], is_loading_details: true }
-          }));
-
-          const { data, error } = await supabase
-            .from('quotations')
-            .select('*')
-            .eq('theme_key', initialQuotationData.theme_key)
-            .single();
-
-          if (error) throw error;
-
-          if (data) {
-            const processedData = {
-              ...data,
-              sections_config: mergeWithDefaults(data.sections_config, data.theme_key),
-            };
-
-            setThemes(prev => ({
-              ...prev,
-              [initialQuotationData.theme_key]: processedData
-            }));
-          }
-        } catch (err) {
-          console.error("Error lazy loading project:", err);
-          // Revert loading state on error? or show error toast
-          toast({ title: "Error", description: "No se pudo cargar el detalle del proyecto.", variant: "destructive" });
-        }
-      } else if (currentTheme && currentTheme.sections_config) {
-        // We already have data, just make sure defaults are merged if not done yet
-        // (Usually handled by the setter logic, but good to ensure)
-      }
-    };
-
-    loadProjectDetails();
-
-    // Legacy/Normal sync logic
     const processedData = {
       ...initialQuotationData,
       sections_config: mergeWithDefaults(initialQuotationData.sections_config, initialQuotationData.theme_key),
     };
-    // Only overwrite if we don't have it (or if forced). 
-    // Ideally we trust themes state.
-    // For now, let's just set active theme.
+    const initialThemes = isAdminView ? allThemes : { [initialQuotationData.theme_key]: processedData };
+    setThemes(initialThemes);
     setActiveTheme(initialQuotationData.theme_key);
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuotationData.theme_key, isAdminView]);
 
