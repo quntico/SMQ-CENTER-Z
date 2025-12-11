@@ -19,13 +19,13 @@ const LayoutSection = ({ sectionData = {}, isEditorMode, onContentChange }) => {
 
   // Initialize content with new structure, preserving old data if needed
   const content = {
-    topViewUrl: sectionData.content?.topViewUrl || DEFAULT_TOP_IMAGE,
+    topViewUrl: sectionData.content?.topViewUrl ?? DEFAULT_TOP_IMAGE,
     topViewTitle: sectionData.content?.topViewTitle || 'Vista Superior',
 
     sideViewUrl: sectionData.content?.sideViewUrl || '',
     sideViewTitle: sectionData.content?.sideViewTitle || 'Vista Lateral',
 
-    isoViewUrl: sectionData.content?.isoViewUrl || DEFAULT_ISO_IMAGE,
+    isoViewUrl: sectionData.content?.isoViewUrl ?? DEFAULT_ISO_IMAGE,
     isoViewTitle: sectionData.content?.isoViewTitle || 'Vista Isométrica',
 
     videoUrl: sectionData.content?.videoUrl || '',
