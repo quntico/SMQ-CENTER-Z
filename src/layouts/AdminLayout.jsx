@@ -17,39 +17,35 @@ const AdminLayout = () => {
       setError(null);
 
       try {
-        // Fetch all quotations first
-        const { data: allData, error: allError } = await supabase.from('quotations').select('*');
+        // 1. Fetch lightweight list (metadata only) for the sidebar/admin panel
+        const { data: allData, error: allError } = await supabase
+          .from('quotations')
+          .select('*'); // Fetch ALL data to prevent crashes when switching
 
         if (allError) {
           throw new Error(`${t('adminLayout.loadError')} ${allError.message}`);
         }
 
+
         const themesObject = {};
         allData.forEach(item => {
           themesObject[item.theme_key] = item;
         });
-        setAllThemes(themesObject);
 
-        // Then, specifically fetch the home quotation
-        // Then, specifically fetch the home quotation
-        const { data: homeDataList, error: homeError } = await supabase
-          .from('quotations')
-          .select('*')
-          .eq('is_home', true)
-          .limit(1);
+        // 2. Determine initial/home data from the ALREADY fetched data
+        const homeData = allData.find(item => item.is_home);
 
-        if (homeError || !homeDataList || homeDataList.length === 0) {
-          // If no home page is set, fallback to a default or show an error
-          const fallbackTheme = themesObject['NOVA'] || Object.values(themesObject)[0];
-          if (fallbackTheme) {
-            setInitialQuotationData(fallbackTheme);
-            console.warn(t('adminLayout.noHome'));
-          } else {
-            throw new Error(t('adminLayout.noHomeNoFallback'));
-          }
+        if (homeData) {
+          setInitialQuotationData(homeData);
+        } else if (allData.length > 0) {
+          // Fallback to first item
+          console.warn(t('adminLayout.noHome'));
+          setInitialQuotationData(allData[0]);
         } else {
-          setInitialQuotationData(homeDataList[0]);
+          throw new Error(t('adminLayout.noHomeNoFallback'));
         }
+
+        setAllThemes(themesObject);
 
       } catch (e) {
         console.error(e);

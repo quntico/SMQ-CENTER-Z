@@ -67,7 +67,7 @@ const MainContent = ({
         };
 
         return (
-          <section id={section.id} key={section.id}>
+          <section id={section.id} key={`${section.id}-${activeTheme}`}>
             <motion.div
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
