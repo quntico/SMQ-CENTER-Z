@@ -61,6 +61,18 @@ const ProcesoSection = ({ sectionData, isEditorMode, onContentChange }) => {
   const content = { ...defaultContent, ...sectionData.content };
   const steps = content.steps || defaultContent.steps;
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const timelineRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: timelineRef,
+    offset: ["start end", "end start"]
+  });
+  const scaleY = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
+
   const handleModalSave = (newSteps) => {
     onContentChange({ ...content, steps: newSteps });
     toast({ title: 'Flujo actualizado', description: 'Los cambios se han guardado correctamente.' });
