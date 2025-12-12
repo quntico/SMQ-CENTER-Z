@@ -2,20 +2,25 @@ import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { iconMap, iconList } from '@/lib/iconMap';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { iconMap, iconList, extrusionIcons } from '@/lib/iconMap';
 import { Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const IconPicker = ({ value, onChange, trigger, children, isEditorMode }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('extrusion');
 
   const filteredIcons = useMemo(() => {
-    if (!search) return iconList.slice(0, 2000);
-    return iconList.filter(name =>
+    // Safety check: ensure lists exist
+    const baseList = (category === 'extrusion' && extrusionIcons) ? extrusionIcons : iconList;
+
+    if (!search) return baseList.slice(0, 2000);
+    return baseList.filter(name =>
       name.toLowerCase().includes(search.toLowerCase())
     ).slice(0, 2000);
-  }, [search]);
+  }, [search, category]);
 
   if (!isEditorMode) {
     return trigger || children;
@@ -37,10 +42,17 @@ const IconPicker = ({ value, onChange, trigger, children, isEditorMode }) => {
           <DialogTitle className="text-blue-500">Seleccionar Icono</DialogTitle>
         </DialogHeader>
 
+        <Tabs defaultValue="extrusion" value={category} onValueChange={setCategory} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-gray-900 border border-gray-800">
+            <TabsTrigger value="extrusion" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">Extrusión</TabsTrigger>
+            <TabsTrigger value="all" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">Todos</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         <div className="relative my-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Buscar icono (ej: home, user, star)..."
+            placeholder={category === 'extrusion' ? "Buscar en Extrusión..." : "Buscar todos los iconos..."}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 bg-gray-900 border-gray-700 focus:border-blue-500 text-white"
