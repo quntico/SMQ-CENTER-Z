@@ -41,7 +41,7 @@ const EditableText = ({ value, onSave, isEditorMode, className = '', tag: Tag = 
         </div>
       ) : (
         <Tag onClick={() => setIsEditing(true)} className={`${className} cursor-pointer p-1 border border-transparent group-hover:border-primary/30 rounded-md transition-all relative`}>
-          <Edit className="absolute top-1 right-1 w-3 h-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+          <Edit className="absolute top-1 right-1 w-3 h-3 text-[#2563eb] opacity-0 group-hover:opacity-100 transition-opacity" />
           {value}
         </Tag>
       )}
@@ -67,7 +67,7 @@ const EditableList = ({ items, onSave, isEditorMode }) => {
       <ul className="space-y-2">
         {items.map((item, index) => (
           <li key={index} className="flex items-start">
-            <ChevronsRight className="w-4 h-4 text-primary mr-2 mt-1 flex-shrink-0" />
+            <ChevronsRight className="w-4 h-4 text-[#2563eb] mr-2 mt-1 flex-shrink-0" />
             <span>{item}</span>
           </li>
         ))}
@@ -95,11 +95,11 @@ const EditableList = ({ items, onSave, isEditorMode }) => {
         </div>
       ) : (
         <div onClick={() => setIsEditing(true)} className="cursor-pointer p-2 border border-transparent group-hover:border-primary/30 rounded-md transition-all relative">
-          <Edit className="absolute top-2 right-2 w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+          <Edit className="absolute top-2 right-2 w-4 h-4 text-[#2563eb] opacity-0 group-hover:opacity-100 transition-opacity" />
           <ul className="space-y-2">
             {items.map((item, index) => (
               <li key={index} className="flex items-start">
-                <ChevronsRight className="w-4 h-4 text-primary mr-2 mt-1 flex-shrink-0" />
+                <ChevronsRight className="w-4 h-4 text-[#2563eb] mr-2 mt-1 flex-shrink-0" />
                 <span>{item}</span>
               </li>
             ))}
@@ -123,7 +123,7 @@ const SpecCard = ({ iconName, title, value, onSave, onIconChange, isEditorMode }
         <div className="relative">
           {isEditorMode ? (
             <IconPicker value={iconName} onChange={onIconChange} isEditorMode={isEditorMode}>
-              <div className="cursor-pointer p-2 rounded-full hover:bg-blue-500/10 transition-colors border border-transparent hover:border-blue-500/50">
+              <div className="cursor-pointer p-2 rounded-full hover:bg-blue-500/10 transition-colors border border-transparent hover:border-[#2563eb]/50">
                 <Icon className="w-6 h-6 text-[#2563eb]" />
               </div>
             </IconPicker>

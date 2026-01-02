@@ -50,6 +50,7 @@ export default function VideoSection({ quotationData, onVideoUrlUpdate, isEditor
   const initialUrl = quotationData?.video_url || "";
   const [input, setInput] = useState(initialUrl);
   const [embedUrl, setEmbedUrl] = useState(null);
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
   const [error, setError] = useState(null);
 
   // Initialize embedUrl on mount or when prop changes
@@ -134,10 +135,11 @@ export default function VideoSection({ quotationData, onVideoUrlUpdate, isEditor
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true, amount: 0.5 }}
+          onViewportEnter={() => setShouldLoadVideo(true)}
           transition={{ duration: 0.7, delay: 0.2 }}
           className="mt-8 sm:mt-12 aspect-video max-w-4xl mx-auto bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden shadow-2xl shadow-blue-900/10"
         >
-          {embedUrl ? (
+          {embedUrl && shouldLoadVideo ? (
             <iframe
               className="w-full h-full"
               src={embedUrl}

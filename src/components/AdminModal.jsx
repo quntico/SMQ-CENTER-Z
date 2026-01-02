@@ -88,7 +88,7 @@ const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActive
   const handleLogoUploadClick = () => logoFileInputRef.current.click();
   const handleFaviconUploadClick = () => faviconFileInputRef.current.click();
 
-  const handleFileChange = (event, fileType) => {
+  const handleFileChange = async (event, fileType) => {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -108,33 +108,42 @@ const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActive
 
     setIsUploading(true);
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result;
+    try {
+      const bucketName = await getActiveBucket();
+      // Create a unique file path: activeTheme/timestamp-filename
+      const fileName = `${activeTheme.toLowerCase()}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '')}`;
 
-      // Immediate update for preview with Base64 string
-      updateState({ [field]: base64String });
+      const { data, error } = await supabase.storage.from(bucketName).upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true
+      });
 
-      setIsUploading(false);
+      if (error) throw error;
+
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage.from(bucketName).getPublicUrl(fileName);
+
+      if (!publicUrlData.publicUrl) throw new Error("No se pudo obtener la URL pública.");
+
+      // Update state with URL
+      updateState({ [field]: publicUrlData.publicUrl });
+
       toast({
         title: `¡${isLogo ? 'Logo' : 'Favicon'} cargado! ${isLogo ? '🖼️' : '✨'}`,
-        description: "La imagen se ha procesado correctamente. No olvides guardar los cambios."
+        description: "La imagen se ha subido a la nube correctamente. No olvides guardar los cambios."
       });
-    };
 
-    reader.onerror = () => {
-      console.error("Error reading file");
-      setIsUploading(false);
+    } catch (error) {
+      console.error("Error uploading file:", error);
       toast({
-        title: "Error al leer el archivo",
-        description: "No se pudo procesar la imagen.",
+        title: "Error al subir el archivo",
+        description: `No se pudo procesar la imagen: ${error.message}`,
         variant: "destructive"
       });
-    };
-
-    reader.readAsDataURL(file);
-
-    if (event.target) event.target.value = "";
+    } finally {
+      setIsUploading(false);
+      if (event.target) event.target.value = "";
+    }
   };
 
   const handleSave = async () => {
@@ -273,7 +282,7 @@ const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActive
       return;
     }
     // Always use production URL for sharing
-    const link = `https://www.smq1.site/cotizacion/${currentThemeData.slug}`;
+    const link = `${window.location.origin}/cotizacion/${currentThemeData.slug}`;
     navigator.clipboard.writeText(link);
     toast({
       title: "¡Enlace copiado! 📋",
@@ -299,21 +308,21 @@ const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActive
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={onClose}>
           <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} transition={{ type: 'spring', damping: 20, stiffness: 300 }} className="bg-[#0a0a0a] rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border border-gray-800" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center p-6 border-b border-gray-800 bg-[#0f0f0f]">
-              <h2 className="text-2xl font-bold text-[#2563eb] flex items-center gap-3"><Settings className="w-6 h-6 text-[#2563eb]" />{t('adminModal.panelTitle')}</h2>
+              <h2 className="text-2xl font-bold text-white flex items-center gap-3"><Settings className="w-6 h-6 text-primary" />{t('adminModal.panelTitle')}</h2>
               <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-400 hover:text-white hover:bg-gray-800"><X className="h-5 w-5" /></Button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
                 <div className="md:col-span-2">
-                  <Label className="text-[#2563eb] mb-2 block flex items-center gap-2 font-semibold"><Palette className="w-5 h-5" />{t('adminModal.activeQuotation')}</Label>
+                  <Label className="text-white mb-2 block flex items-center gap-2 font-semibold"><Palette className="w-5 h-5" />{t('adminModal.activeQuotation')}</Label>
                   <Select value={activeTheme} onValueChange={handleThemeChange}>
-                    <SelectTrigger className="border-gray-700 bg-gray-900 text-white focus:ring-[#2563eb]">
+                    <SelectTrigger className="border-gray-700 bg-gray-900 text-white focus:ring-primary">
                       <SelectValue placeholder={t('adminModal.selectQuotation')} />
                     </SelectTrigger>
                     <SelectContent className="bg-gray-900 border-gray-700 text-white">
                       {Object.values(themes).sort((a, b) => a.project.localeCompare(b.project)).map(theme => (
-                        <SelectItem key={theme.theme_key} value={theme.theme_key} className="focus:bg-[#2563eb] focus:text-white">
+                        <SelectItem key={theme.theme_key} value={theme.theme_key} className="focus:bg-primary focus:text-white">
                           <div className="flex items-center gap-2">
                             {theme.is_home && <Home className="w-4 h-4 text-green-400" />}
                             {theme.is_template && <Star className="w-4 h-4 text-yellow-400" />}
@@ -324,7 +333,7 @@ const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActive
                     </SelectContent>
                   </Select>
                 </div>
-                <div><Label htmlFor="company" className="text-[#2563eb] mb-2 block font-semibold">{t('adminModal.company')}</Label><Input id="company" name="company" value={currentThemeData.company || ''} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb]" /></div>
+                <div><Label htmlFor="company" className="text-white mb-2 block font-semibold">{t('adminModal.company')}</Label><Input id="company" name="company" value={currentThemeData.company || ''} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb]" /></div>
 
                 {/* Start Page Switch */}
                 <div className="flex items-center justify-between p-3 rounded-lg border border-gray-800 bg-gray-900/50">
@@ -343,43 +352,43 @@ const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActive
                   />
                 </div>
 
-                <div><Label htmlFor="project" className="text-[#2563eb] mb-2 block font-semibold">{t('adminModal.project')}</Label><Input id="project" name="project" value={currentThemeData.project || ''} onChange={handleInputChange} disabled={isEditingTemplate} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb]" /></div>
-                <div><Label htmlFor="client" className="text-[#2563eb] mb-2 block font-semibold">{t('adminModal.client')}</Label><Input id="client" name="client" value={currentThemeData.client || ''} onChange={handleInputChange} disabled={isEditingTemplate} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb]" /></div>
-                <div><Label htmlFor="title" className="text-[#2563eb] mb-2 block font-semibold">{t('adminModal.title')}</Label><Input id="title" name="title" value={currentThemeData.title || ''} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb]" /></div>
-                <div className="md:col-span-2"><Label htmlFor="subtitle" className="text-[#2563eb] mb-2 block font-semibold">{t('adminModal.subtitle')}</Label><Input id="subtitle" name="subtitle" value={currentThemeData.subtitle || ''} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb]" /></div>
-                <div className="md:col-span-2"><Label htmlFor="slug" className="text-[#2563eb] mb-2 block flex items-center gap-2 font-semibold"><LinkIcon className="w-4 h-4" />{t('adminModal.slug')}</Label><Input id="slug" name="slug" value={currentThemeData.slug || ''} onChange={handleInputChange} disabled={isEditingTemplate} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb]" /></div>
-                <div className="md:col-span-2"><Label htmlFor="description" className="text-[#2563eb] mb-2 block font-semibold">{t('adminModal.description')}</Label><textarea id="description" name="description" value={currentThemeData.description || ''} onChange={handleInputChange} rows="3" className="flex w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#2563eb] disabled:cursor-not-allowed disabled:opacity-50" /></div>
+                <div><Label htmlFor="project" className="text-white mb-2 block font-semibold">{t('adminModal.project')}</Label><Input id="project" name="project" value={currentThemeData.project || ''} onChange={handleInputChange} disabled={isEditingTemplate} className="bg-gray-900 border-gray-700 text-white focus:border-primary" /></div>
+                <div><Label htmlFor="client" className="text-white mb-2 block font-semibold">{t('adminModal.client')}</Label><Input id="client" name="client" value={currentThemeData.client || ''} onChange={handleInputChange} disabled={isEditingTemplate} className="bg-gray-900 border-gray-700 text-white focus:border-primary" /></div>
+                <div><Label htmlFor="title" className="text-white mb-2 block font-semibold">{t('adminModal.title')}</Label><Input id="title" name="title" value={currentThemeData.title || ''} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-primary" /></div>
+                <div className="md:col-span-2"><Label htmlFor="subtitle" className="text-white mb-2 block font-semibold">{t('adminModal.subtitle')}</Label><Input id="subtitle" name="subtitle" value={currentThemeData.subtitle || ''} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-primary" /></div>
+                <div className="md:col-span-2"><Label htmlFor="slug" className="text-white mb-2 block flex items-center gap-2 font-semibold"><LinkIcon className="w-4 h-4" />{t('adminModal.slug')}</Label><Input id="slug" name="slug" value={currentThemeData.slug || ''} onChange={handleInputChange} disabled={isEditingTemplate} className="bg-gray-900 border-gray-700 text-white focus:border-primary" /></div>
+                <div className="md:col-span-2"><Label htmlFor="description" className="text-white mb-2 block font-semibold">{t('adminModal.description')}</Label><textarea id="description" name="description" value={currentThemeData.description || ''} onChange={handleInputChange} rows="3" className="flex w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-50" /></div>
 
                 <div className="md:col-span-2 border-t border-gray-800 pt-6">
-                  <h3 className="text-lg font-bold text-[#2563eb] mb-4 flex items-center gap-2"><Announce className="w-5 h-5" />{t('adminModal.bannerSettings')}</h3>
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Announce className="w-5 h-5" />{t('adminModal.bannerSettings')}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-3">
                       <Label htmlFor="banner_text" className="text-gray-300">{t('adminModal.bannerText')}</Label>
-                      <Input id="banner_text" name="banner_text" value={currentThemeData.banner_text || ''} onChange={handleInputChange} placeholder={t('adminModal.bannerTextPlaceholder')} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb]" />
+                      <Input id="banner_text" name="banner_text" value={currentThemeData.banner_text || ''} onChange={handleInputChange} placeholder={t('adminModal.bannerTextPlaceholder')} className="bg-gray-900 border-gray-700 text-white focus:border-primary" />
                     </div>
                     <div className="space-y-3">
                       <Label htmlFor="banner_direction" className="text-gray-300 flex items-center gap-2"><MoveHorizontal className="w-4 h-4" />{t('adminModal.bannerDirection')}</Label>
                       <Select value={currentThemeData.banner_direction} onValueChange={(val) => handleSelectChange('banner_direction', val)}>
                         <SelectTrigger className="bg-gray-900 border-gray-700 text-white"><SelectValue /></SelectTrigger>
                         <SelectContent className="bg-gray-900 border-gray-700 text-white">
-                          <SelectItem value="left-to-right" className="focus:bg-[#2563eb]">{t('adminModal.leftToRight')}</SelectItem>
-                          <SelectItem value="right-to-left" className="focus:bg-[#2563eb]">{t('adminModal.rightToLeft')}</SelectItem>
+                          <SelectItem value="left-to-right" className="focus:bg-primary">{t('adminModal.leftToRight')}</SelectItem>
+                          <SelectItem value="right-to-left" className="focus:bg-primary">{t('adminModal.rightToLeft')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="sm:col-span-2 flex items-center space-x-2 pt-4">
-                      <Switch id="hide-banner" checked={currentThemeData.hide_banner} onCheckedChange={(checked) => handleSwitchChange('hide_banner', checked)} className="data-[state=checked]:bg-[#2563eb]" />
+                      <Switch id="hide-banner" checked={currentThemeData.hide_banner} onCheckedChange={(checked) => handleSwitchChange('hide_banner', checked)} className="data-[state=checked]:bg-primary" />
                       <Label htmlFor="hide-banner" className="flex items-center gap-2 text-gray-300"><EyeOff className="w-4 h-4" />{t('adminModal.hideBanner')}</Label>
                     </div>
                   </div>
                 </div>
 
-                <div className="md:col-span-2 space-y-4"><Label className="text-[#2563eb] mb-2 block flex items-center gap-2 font-semibold"><Scale className="w-5 h-5" />{t('adminModal.logoWidth')}: <span className="font-bold text-[#2563eb]">{currentThemeData.logo_size}px</span></Label><Slider id="logoSize" name="logo_size" min={50} max={700} step={5} value={[currentThemeData.logo_size]} onValueChange={(val) => handleSliderChange('logo_size', val)} className="[&>.relative>.bg-primary]:bg-[#2563eb]" /></div>
-                <div className="md:col-span-2 space-y-4"><Label className="text-[#2563eb] mb-2 block flex items-center gap-2 font-semibold"><Minimize className="w-5 h-5" />{t('adminModal.bannerSize')}: <span className="font-bold text-[#2563eb]">{currentThemeData.banner_scale}%</span></Label><Slider id="bannerScale" name="banner_scale" min={30} max={150} step={10} value={[currentThemeData.banner_scale]} onValueChange={(val) => handleSliderChange('banner_scale', val)} className="[&>.relative>.bg-primary]:bg-[#2563eb]" /></div>
-                <div className="md:col-span-1"><Label htmlFor="initialDisplayTime" className="text-[#2563eb] mb-2 block flex items-center gap-2 font-semibold"><PlaySquare className="w-5 h-5" />{t('adminModal.initialTime')}</Label><Input id="initialDisplayTime" name="initial_display_time" type="number" value={currentThemeData.initial_display_time} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb]" /></div>
-                <div className="md:col-span-1"><Label htmlFor="idleTimeout" className="text-[#2563eb] mb-2 block flex items-center gap-2 font-semibold"><Timer className="w-5 h-5" />{t('adminModal.idleTime')}</Label><Input id="idleTimeout" name="idle_timeout" type="number" value={currentThemeData.idle_timeout} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb]" /></div>
-                <div className="md:col-span-2 border-t border-gray-800 pt-6"><h3 className="text-lg font-bold text-[#2563eb] mb-4 flex items-center gap-2"><Clock className="w-5 h-5" />{t('adminModal.timelineSettings')}</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-6"><div className="space-y-3 p-4 bg-gray-900/50 rounded-lg border border-gray-800"><Label className="flex items-center gap-2 text-[#2563eb] font-semibold"><CheckCircle className="w-4 h-4" />{t('adminModal.phase1')}</Label><Input name="phase1_name" placeholder={t('adminModal.phase1Name')} value={currentThemeData.phase1_name} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb] mb-2" /><Input name="phase1_duration" type="number" placeholder={t('adminModal.durationDays')} value={currentThemeData.phase1_duration} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb]" /></div><div className="space-y-3 p-4 bg-gray-900/50 rounded-lg border border-gray-800"><Label className="flex items-center gap-2 text-[#2563eb] font-semibold"><Wrench className="w-4 h-4" />{t('adminModal.phase2')}</Label><Input name="phase2_name" placeholder={t('adminModal.phase2Name')} value={currentThemeData.phase2_name} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb] mb-2" /><Input name="phase2_duration" type="number" placeholder={t('adminModal.durationDays')} value={currentThemeData.phase2_duration} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb]" /></div><div className="space-y-3 p-4 bg-gray-900/50 rounded-lg border border-gray-800"><Label className="flex items-center gap-2 text-[#2563eb] font-semibold"><Ship className="w-4 h-4" />{t('adminModal.phase3')}</Label><Input name="phase3_name" placeholder={t('adminModal.phase3Name')} value={currentThemeData.phase3_name} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb] mb-2" /><Input name="phase3_duration" type="number" placeholder={t('adminModal.durationDays')} value={currentThemeData.phase3_duration} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb]" /></div><div className="space-y-3 p-4 bg-gray-900/50 rounded-lg border border-gray-800"><Label className="flex items-center gap-2 text-[#2563eb] font-semibold"><Truck className="w-4 h-4" />{t('adminModal.phase4')}</Label><Input name="phase4_name" placeholder={t('adminModal.phase4Name')} value={currentThemeData.phase4_name} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-[#2563eb]" /></div></div></div>
-                <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t border-gray-800"><Button variant="outline" onClick={handleLogoUploadClick} disabled={isUploadingLogo} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10">{isUploadingLogo ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}{isUploadingLogo ? t('adminModal.uploading') : t('adminModal.uploadLogo')}</Button><Button variant="outline" onClick={handleFaviconUploadClick} disabled={isUploadingFavicon} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10">{isUploadingFavicon ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Image className="mr-2 h-4 w-4" />}{isUploadingFavicon ? t('adminModal.uploading') : t('adminModal.uploadFavicon')}</Button></div>
+                <div className="md:col-span-2 space-y-4"><Label className="text-white mb-2 block flex items-center gap-2 font-semibold"><Scale className="w-5 h-5" />{t('adminModal.logoWidth')}: <span className="font-bold text-primary">{currentThemeData.logo_size}px</span></Label><Slider id="logoSize" name="logo_size" min={50} max={700} step={5} value={[currentThemeData.logo_size]} onValueChange={(val) => handleSliderChange('logo_size', val)} className="[&>.relative>.bg-primary]:bg-primary" /></div>
+                <div className="md:col-span-2 space-y-4"><Label className="text-white mb-2 block flex items-center gap-2 font-semibold"><Minimize className="w-5 h-5" />{t('adminModal.bannerSize')}: <span className="font-bold text-primary">{currentThemeData.banner_scale}%</span></Label><Slider id="bannerScale" name="banner_scale" min={30} max={150} step={10} value={[currentThemeData.banner_scale]} onValueChange={(val) => handleSliderChange('banner_scale', val)} className="[&>.relative>.bg-primary]:bg-primary" /></div>
+                <div className="md:col-span-1"><Label htmlFor="initialDisplayTime" className="text-white mb-2 block flex items-center gap-2 font-semibold"><PlaySquare className="w-5 h-5" />{t('adminModal.initialTime')}</Label><Input id="initialDisplayTime" name="initial_display_time" type="number" value={currentThemeData.initial_display_time} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-primary" /></div>
+                <div className="md:col-span-1"><Label htmlFor="idleTimeout" className="text-white mb-2 block flex items-center gap-2 font-semibold"><Timer className="w-5 h-5" />{t('adminModal.idleTime')}</Label><Input id="idleTimeout" name="idle_timeout" type="number" value={currentThemeData.idle_timeout} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-primary" /></div>
+                <div className="md:col-span-2 border-t border-gray-800 pt-6"><h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Clock className="w-5 h-5" />{t('adminModal.timelineSettings')}</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-6"><div className="space-y-3 p-4 bg-gray-900/50 rounded-lg border border-gray-800"><Label className="flex items-center gap-2 text-white font-semibold"><CheckCircle className="w-4 h-4" />{t('adminModal.phase1')}</Label><Input name="phase1_name" placeholder={t('adminModal.phase1Name')} value={currentThemeData.phase1_name} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-primary mb-2" /><Input name="phase1_duration" type="number" placeholder={t('adminModal.durationDays')} value={currentThemeData.phase1_duration} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-primary" /></div><div className="space-y-3 p-4 bg-gray-900/50 rounded-lg border border-gray-800"><Label className="flex items-center gap-2 text-white font-semibold"><Wrench className="w-4 h-4" />{t('adminModal.phase2')}</Label><Input name="phase2_name" placeholder={t('adminModal.phase2Name')} value={currentThemeData.phase2_name} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-primary mb-2" /><Input name="phase2_duration" type="number" placeholder={t('adminModal.durationDays')} value={currentThemeData.phase2_duration} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-primary" /></div><div className="space-y-3 p-4 bg-gray-900/50 rounded-lg border border-gray-800"><Label className="flex items-center gap-2 text-white font-semibold"><Ship className="w-4 h-4" />{t('adminModal.phase3')}</Label><Input name="phase3_name" placeholder={t('adminModal.phase3Name')} value={currentThemeData.phase3_name} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-primary mb-2" /><Input name="phase3_duration" type="number" placeholder={t('adminModal.durationDays')} value={currentThemeData.phase3_duration} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-primary" /></div><div className="space-y-3 p-4 bg-gray-900/50 rounded-lg border border-gray-800"><Label className="flex items-center gap-2 text-white font-semibold"><Truck className="w-4 h-4" />{t('adminModal.phase4')}</Label><Input name="phase4_name" placeholder={t('adminModal.phase4Name')} value={currentThemeData.phase4_name} onChange={handleInputChange} className="bg-gray-900 border-gray-700 text-white focus:border-primary" /></div></div></div>
+                <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t border-gray-800"><Button variant="outline" onClick={handleLogoUploadClick} disabled={isUploadingLogo} className="border-primary text-primary hover:bg-primary/10">{isUploadingLogo ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}{isUploadingLogo ? t('adminModal.uploading') : t('adminModal.uploadLogo')}</Button><Button variant="outline" onClick={handleFaviconUploadClick} disabled={isUploadingFavicon} className="border-primary text-primary hover:bg-primary/10">{isUploadingFavicon ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Image className="mr-2 h-4 w-4" />}{isUploadingFavicon ? t('adminModal.uploading') : t('adminModal.uploadFavicon')}</Button></div>
                 <input type="file" ref={logoFileInputRef} onChange={(e) => handleFileChange(e, 'logo')} accept="image/png, image/jpeg, image/svg+xml" className="hidden" /><input type="file" ref={faviconFileInputRef} onChange={(e) => handleFileChange(e, 'favicon')} accept="image/x-icon, image/png, image/svg+xml" className="hidden" />
               </div>
             </div>
@@ -387,19 +396,19 @@ const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActive
             <div className="p-6 border-t border-gray-800 bg-[#0f0f0f] space-y-4">
               {/* Primary Actions Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Button variant="outline" onClick={onCloneClick} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10 w-full"><Copy className="h-4 w-4 mr-2" />{t('adminModal.clone')}</Button>
-                <Button variant="outline" onClick={handleCopyLink} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10 w-full"><ClipboardCopy className="h-4 w-4 mr-2" />Link</Button>
-                <Button variant="outline" onClick={() => setShowQR(true)} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10 w-full"><QrCode className="h-4 w-4 mr-2" />QR</Button>
-                <Button variant="outline" onClick={handleOpenLink} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10 w-full"><ExternalLink className="h-4 w-4 mr-2" />Abrir</Button>
+                <Button variant="outline" onClick={onCloneClick} className="border-blue-600 text-blue-500 hover:bg-blue-600 hover:text-white w-full transition-colors"><Copy className="h-4 w-4 mr-2" />{t('adminModal.clone')}</Button>
+                <Button variant="outline" onClick={handleCopyLink} className="border-blue-600 text-blue-500 hover:bg-blue-600 hover:text-white w-full transition-colors"><ClipboardCopy className="h-4 w-4 mr-2" />Link</Button>
+                <Button variant="outline" onClick={() => setShowQR(true)} className="border-blue-600 text-blue-500 hover:bg-blue-600 hover:text-white w-full transition-colors"><QrCode className="h-4 w-4 mr-2" />QR</Button>
+                <Button variant="outline" onClick={handleOpenLink} className="border-blue-600 text-blue-500 hover:bg-blue-600 hover:text-white w-full transition-colors"><ExternalLink className="h-4 w-4 mr-2" />Abrir</Button>
               </div>
 
               {/* Secondary Actions & System Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {!isEditingTemplate && (
-                  <Button variant="secondary" onClick={handleSetAsTemplate} className="bg-[#2563eb]/10 text-[#2563eb] hover:bg-[#2563eb]/20 border border-[#2563eb]/20 w-full"><Star className="h-4 w-4 mr-2" />{t('adminModal.setAsTemplate')}</Button>
+                  <Button variant="secondary" onClick={handleSetAsTemplate} className="bg-blue-600/10 text-blue-500 hover:bg-blue-600/20 border border-blue-600/20 w-full"><Star className="h-4 w-4 mr-2" />{t('adminModal.setAsTemplate')}</Button>
                 )}
                 {!isEditingHome && (
-                  <Button variant="secondary" onClick={handleSetAsHome} className="bg-[#2563eb]/10 text-[#2563eb] hover:bg-[#2563eb]/20 border border-[#2563eb]/20 w-full"><Home className="h-4 w-4 mr-2" />{t('adminModal.setAsHomePage')}</Button>
+                  <Button variant="secondary" onClick={handleSetAsHome} className="bg-blue-600/10 text-blue-500 hover:bg-blue-600/20 border border-blue-600/20 w-full"><Home className="h-4 w-4 mr-2" />{t('adminModal.setAsHomePage')}</Button>
                 )}
                 {isEditingTemplate && (
                   <Button variant="secondary" onClick={handleGoToTemplate} disabled className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 w-full"><Star className="h-4 w-4 mr-2 text-yellow-500" />{t('adminModal.editingTemplate')}</Button>
@@ -409,8 +418,8 @@ const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActive
 
               {/* Save & Reset Actions */}
               <div className="flex gap-3 pt-2 border-t border-gray-800">
-                <Button variant="outline" onClick={handleReset} disabled={isSaving} className="border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/10 flex-1"><Eraser className="h-4 w-4 mr-2" />{t('adminModal.reset')}</Button>
-                <Button onClick={handleSave} disabled={isSaving || isUploadingLogo || isUploadingFavicon} className="bg-[#2563eb] text-white hover:bg-[#1d4ed8] shadow-[0_0_15px_rgba(37,99,235,0.4)] flex-[2]">{isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}{t('adminModal.saveChanges')}</Button>
+                <Button variant="outline" onClick={handleReset} disabled={isSaving} className="border-blue-600 text-blue-500 hover:bg-blue-600/10 flex-1"><Eraser className="h-4 w-4 mr-2" />{t('adminModal.reset')}</Button>
+                <Button onClick={handleSave} disabled={isSaving || isUploadingLogo || isUploadingFavicon} className="bg-blue-600 text-white hover:bg-blue-700 shadow-[0_0_15px_rgba(37,99,235,0.4)] flex-[2]">{isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}{t('adminModal.saveChanges')}</Button>
               </div>
             </div>
           </motion.div>
@@ -421,12 +430,12 @@ const AdminModal = ({ isOpen, onClose, themes, setThemes, activeTheme, setActive
           <div className="bg-white p-8 rounded-xl flex flex-col items-center gap-6 shadow-2xl" onClick={e => e.stopPropagation()}>
             <h3 className="text-2xl font-bold text-black">Código QR</h3>
             <div className="p-4 bg-white rounded-lg shadow-inner border border-gray-200">
-              <QRCodeCanvas value={`https://www.smq1.site/cotizacion/${currentThemeData.slug}`} size={256} level="H" includeMargin={true} />
+              <QRCodeCanvas value={`${window.location.origin}/cotizacion/${currentThemeData.slug}`} size={256} level="H" includeMargin={true} />
             </div>
             <div className="text-center">
               <p className="text-sm text-gray-600 font-medium mb-1">{currentThemeData.project}</p>
               <p className="text-xs text-gray-400 break-all max-w-xs">
-                {`https://www.smq1.site/cotizacion/${currentThemeData.slug || 'SIN-SLUG'}`}
+                {`${window.location.origin}/cotizacion/${currentThemeData.slug || 'SIN-SLUG'}`}
               </p>
             </div>
             <Button onClick={() => setShowQR(false)} className="w-full">Cerrar</Button>

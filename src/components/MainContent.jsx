@@ -1,6 +1,31 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
+const LazySectionWrapper = ({ children, placeholderHeight = "min-h-[50vh]", id }) => {
+  const [shouldLoad, setShouldLoad] = React.useState(false);
+
+  return (
+    <motion.div
+      initial={false}
+      whileInView={() => setShouldLoad(true)}
+      viewport={{ once: true, amount: 0, margin: "200px" }} // Load 200px before it comes into view
+      className={`relative w-full ${!shouldLoad ? placeholderHeight : ''}`}
+    >
+      {shouldLoad ? (
+        <React.Suspense fallback={
+          <div className="w-full h-40 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        }>
+          {children}
+        </React.Suspense>
+      ) : (
+        <div className="w-full h-full absolute inset-0" />
+      )}
+    </motion.div>
+  );
+};
+
 const MainContent = ({
   activeSection,
   setActiveSection,
@@ -68,14 +93,16 @@ const MainContent = ({
 
         return (
           <section id={section.id} key={section.id}>
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.5 }}
-            >
-              <Component {...props} />
-            </motion.div>
+            <LazySectionWrapper id={section.id} placeholderHeight={section.id === 'portada' ? 'min-h-screen' : 'min-h-[50vh]'}>
+              <motion.div
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true, amount: 0.1 }}
+                transition={{ duration: 0.5 }}
+              >
+                <Component {...props} />
+              </motion.div>
+            </LazySectionWrapper>
           </section>
         );
       })}

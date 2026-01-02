@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Cog, Database, ShieldCheck, Zap } from 'lucide-react';
 
 const loadingTexts = [
   "Inicializando sistema...",
@@ -24,75 +23,49 @@ const CodeLine = ({ children, delay }) => (
   </motion.p>
 );
 
-const LoadingScreen = () => {
+// Simplified LoadingScreen without icon animations
+const LoadingScreen = ({ message }) => {
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
 
   useEffect(() => {
+    if (message) return; // If a static message is provided, skip cycling
     const interval = setInterval(() => {
-      setCurrentTextIndex((prevIndex) => (prevIndex + 1) % loadingTexts.length);
-    }, 300);
+      setCurrentTextIndex((prev) => (prev + 1) % loadingTexts.length);
+    }, 2000);
     return () => clearInterval(interval);
-  }, []);
-
-  const icons = [
-    { icon: Cog, color: 'text-blue-400' },
-    { icon: Database, color: 'text-purple-400' },
-    { icon: ShieldCheck, color: 'text-green-400' },
-    { icon: Zap, color: 'text-yellow-400' },
-  ];
+  }, [message]);
 
   return (
-    <div className="fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center overflow-hidden">
-      <motion.div
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ type: 'spring', damping: 15 }}
-        className="relative flex items-center justify-center w-40 h-40"
-      >
-        {icons.map((item, index) => {
-          const angle = (index / icons.length) * 2 * Math.PI;
-          return (
-            <motion.div
-              key={index}
-              className={`absolute ${item.color}`}
-              animate={{
-                x: Math.cos(angle) * 70,
-                y: Math.sin(angle) * 70,
-                rotate: [0, 360],
-              }}
-              transition={{
-                duration: 4 + index,
-                repeat: Infinity,
-                ease: 'linear',
-              }}
-            >
-              <item.icon />
-            </motion.div>
-          );
-        })}
-        <motion.div 
-            className="w-16 h-16 bg-primary rounded-full"
-            animate={{ scale: [1, 1.2, 1], rotate: [0, -180, -360] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </motion.div>
-
-      <div className="mt-8 text-center">
+    <div className="fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center overflow-hidden p-4">
+      {/* Optional static or rotating message */}
+      <div className="mt-8 text-center bg-black/50 p-4 rounded-lg backdrop-blur-sm z-[110]">
         <AnimatePresence mode="wait">
-          <motion.p
-            key={currentTextIndex}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="text-lg font-medium text-white"
-          >
-            {loadingTexts[currentTextIndex]}
-          </motion.p>
+          {message ? (
+            <motion.p
+              key="static-message"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="text-xl font-bold text-white tracking-wider"
+            >
+              {message}
+            </motion.p>
+          ) : (
+            <motion.p
+              key={currentTextIndex}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="text-lg font-medium text-white"
+            >
+              {loadingTexts[currentTextIndex]}
+            </motion.p>
+          )}
         </AnimatePresence>
       </div>
-
-      <div className="absolute inset-0 pointer-events-none">
+      {/* Code lines for visual effect */}
+      <div className="absolute inset-0 pointer-events-none flex flex-col justify-center items-center">
         <CodeLine delay={0}>[AI.core] Bootstrapping services...</CodeLine>
         <CodeLine delay={0.25}>[render.v8] Initializing virtual DOM...</CodeLine>
         <CodeLine delay={0.5}>[auth.jwt] Validating session token: SUCCESS</CodeLine>

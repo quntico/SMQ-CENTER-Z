@@ -5,36 +5,38 @@ import Header from '@/components/Header';
 import MainContent from '@/components/MainContent';
 import AdminModal from '@/components/AdminModal';
 import { Toaster } from '@/components/ui/toaster';
+import { useToast } from '@/components/ui/use-toast';
 import { CommandDialogDemo } from '@/components/CommandDialog';
 import { supabase } from '@/lib/customSupabaseClient';
 import PasswordPrompt from '@/components/PasswordPrompt';
 import BottomNavBar from '@/components/BottomNavBar';
 import CloneModal from '@/components/CloneModal';
 import { useLanguage } from '@/contexts/LanguageContext';
+import LoadingScreen from '@/components/LoadingScreen';
 
 import PortadaSection from '@/components/sections/PortadaSection';
-import DescripcionSection from '@/components/sections/DescripcionSection';
-import GeneralesSection from '@/components/sections/GeneralesSection';
-import FichaTecnicaSection from '@/components/sections/FichaTecnicaSection';
-import FichaDinamicaSection from '@/components/sections/FichaDinamicaSection';
-import CronogramaSection from '@/components/sections/CronogramaSection';
-import ServiciosSection from '@/components/sections/ServiciosSection';
-import LayoutSection from '@/components/sections/LayoutSection';
-import VideoSection from '@/components/sections/VideoSection';
-import ProcesoSection from '@/components/sections/ProcesoSection';
-import PDFSection from '@/components/sections/PDFSection';
-import GenericSection from '@/components/sections/GenericSection';
-import IASection from '@/components/sections/IASection';
-import CondicionesPagoSection from '@/components/sections/CondicionesPagoSection';
-import PropuestaEconomicaSection from '@/components/sections/PropuestaEconomicaSection';
-import CotizadorPage from '@/components/CotizadorPage';
-import CotizadorSMQ from '@/components/CotizadorSMQ';
-import CalculadoraProduccion from '@/components/CalculadoraProduccion';
-import ExclusionesSection from '@/components/sections/ExclusionesSection';
-import CapacidadesSection from '@/components/sections/CapacidadesSection';
-import SCR700Page from '@/components/sections/SCR700Page';
-import ClientesSection from '@/components/sections/ClientesSection';
-import VentajasSection from '@/components/sections/VentajasSection';
+const DescripcionSection = React.lazy(() => import('@/components/sections/DescripcionSection'));
+const GeneralesSection = React.lazy(() => import('@/components/sections/GeneralesSection'));
+const FichaTecnicaSection = React.lazy(() => import('@/components/sections/FichaTecnicaSection'));
+const FichaDinamicaSection = React.lazy(() => import('@/components/sections/FichaDinamicaSection'));
+const CronogramaSection = React.lazy(() => import('@/components/sections/CronogramaSection'));
+const ServiciosSection = React.lazy(() => import('@/components/sections/ServiciosSection'));
+const LayoutSection = React.lazy(() => import('@/components/sections/LayoutSection'));
+const VideoSection = React.lazy(() => import('@/components/sections/VideoSection'));
+const ProcesoSection = React.lazy(() => import('@/components/sections/ProcesoSection'));
+const PDFSection = React.lazy(() => import('@/components/sections/PDFSection'));
+const GenericSection = React.lazy(() => import('@/components/sections/GenericSection'));
+const IASection = React.lazy(() => import('@/components/sections/IASection'));
+const CondicionesPagoSection = React.lazy(() => import('@/components/sections/CondicionesPagoSection'));
+const PropuestaEconomicaSection = React.lazy(() => import('@/components/sections/PropuestaEconomicaSection'));
+const CotizadorPage = React.lazy(() => import('@/components/CotizadorPage'));
+const CotizadorSMQ = React.lazy(() => import('@/components/CotizadorSMQ'));
+const CalculadoraProduccion = React.lazy(() => import('@/components/CalculadoraProduccion'));
+const ExclusionesSection = React.lazy(() => import('@/components/sections/ExclusionesSection'));
+const CapacidadesSection = React.lazy(() => import('@/components/sections/CapacidadesSection'));
+const SCR700Page = React.lazy(() => import('@/components/sections/SCR700Page'));
+const ClientesSection = React.lazy(() => import('@/components/sections/ClientesSection'));
+const VentajasSection = React.lazy(() => import('@/components/sections/VentajasSection'));
 
 const componentMap = {
   ventajas: VentajasSection,
@@ -122,8 +124,7 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
   const [themes, setThemes] = useState(isAdminView ? allThemes : { [initialQuotationData.theme_key]: initialQuotationData });
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showCloneModal, setShowCloneModal] = useState(false);
-  const [activeSection, setActiveSection] = useState('descripcion');
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [activeSection, setActiveSection] = useState('portada'); const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showCommandDialog, setShowCommandDialog] = useState(false);
   const [aiQuery, setAiQuery] = useState('');
   const [isBannerVisible, setIsBannerVisible] = useState(true);
@@ -132,8 +133,11 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
   const idleTimerRef = useRef(null);
   const initialDisplayTimerRef = useRef(null);
   const hasInteracted = useRef(false);
+  const fetchingRef = useRef(new Set());
   const [previewData, setPreviewData] = useState(null);
+  const [isThemeLoading, setIsThemeLoading] = useState(false);
   const { t } = useLanguage();
+  const { toast } = useToast();
 
   const quotationData = themes[activeTheme];
   const displayData = previewData ? { ...quotationData, ...previewData } : quotationData;
@@ -148,6 +152,53 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
     setActiveTheme(initialQuotationData.theme_key);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuotationData.theme_key, isAdminView]);
+
+  useEffect(() => {
+    const loadThemeData = async () => {
+      if (!isAdminView) return;
+      const currentTheme = themes[activeTheme];
+
+      // Check if we have full data (sections_config is a good proxy as it's not in metadata)
+      // We check for undefined specifically, as null is a valid value from DB
+      const hasFullData = currentTheme && currentTheme.sections_config !== undefined;
+
+      if (currentTheme && !hasFullData && !fetchingRef.current.has(activeTheme)) {
+        fetchingRef.current.add(activeTheme);
+        setIsThemeLoading(true);
+        try {
+          const { data, error } = await supabase
+            .from('quotations')
+            .select('*')
+            .eq('theme_key', activeTheme)
+            .single();
+
+          if (error) throw error;
+
+          if (data) {
+            // Process the data like we do initially
+            const processed = {
+              ...data,
+              sections_config: mergeWithDefaults(data.sections_config, data.theme_key)
+            };
+
+            setThemes(prev => ({
+              ...prev,
+              [activeTheme]: processed
+            }));
+          }
+        } catch (err) {
+          console.error("Error fetching theme detail:", err);
+          toast({ title: "Error", description: "No se pudieron cargar los detalles de la cotización.", variant: "destructive" });
+        } finally {
+          setIsThemeLoading(false);
+          fetchingRef.current.delete(activeTheme);
+        }
+      }
+    };
+
+    loadThemeData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTheme, isAdminView, toast]);
 
   const handleAdminLogout = () => {
     setIsAdminAuthenticated(false);
@@ -182,6 +233,7 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
     // Initial Timer: Hide banner after initial time, BUT only if we aren't already "idle enough" to keep it shown
     // or if we want to enforce a "blink" effect (Show -> Hide -> Show).
     // Given the user wants it to "run", a blink (Show Intro -> Hide -> Show Screensaver) is a good feedback loop.
+    /* 
     initialDisplayTimerRef.current = setTimeout(() => {
       if (!hasInteracted.current) {
         // If initial time is less than idle time, we hide it temporarily so it can "come back" at idle time.
@@ -191,6 +243,7 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
         }
       }
     }, initialTime);
+    */
 
     // Start Idle Timer on mount to ensure it shows up if user does nothing from start
     idleTimerRef.current = setTimeout(() => {
@@ -212,6 +265,29 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
     if (displayData) {
       if (isAdminView) localStorage.setItem('activeTheme', activeTheme);
       document.body.className = 'theme-nova';
+
+      // Dynamic Brand Theming
+      const root = document.documentElement;
+      const colorMap = {
+        blue: '221.2 83.2% 53.3%', // Royal Blue #2563eb
+        red: '0 72.2% 50.6%',     // Deep Red #dc2626
+        yellow: '47.9 95.8% 53.1%' // Novapack Yellow #facc15
+      };
+
+      const brandColor = displayData.brand_color || 'blue';
+      const primaryValue = colorMap[brandColor] || colorMap['blue'];
+
+      root.style.setProperty('--primary', primaryValue);
+      root.style.setProperty('--ring', primaryValue);
+
+      // Legacy support if needed
+      root.style.setProperty('--color-led-blue', primaryValue);
+
+      if (brandColor === 'yellow') {
+        root.style.setProperty('--primary-foreground', '0 0% 0%'); // Black text on yellow
+      } else {
+        root.style.setProperty('--primary-foreground', '210 40% 98%'); // White text
+      }
     }
   }, [activeTheme, displayData, isAdminView]);
 
@@ -247,6 +323,11 @@ const QuotationViewer = ({ initialQuotationData, allThemes = {}, isAdminView = f
 
 
 
+  if (!displayData || (isAdminView && isThemeLoading && !displayData.sections_config)) {
+    return <LoadingScreen message={isThemeLoading ? "Cargando datos de la cotización..." : "Cargando..."} />;
+  }
+
+  // Fallback if data is missing but not loading (shouldn't happen with correct logic, but safe guard)
   if (!displayData) return null;
 
   let menuItems = (displayData.sections_config || defaultSections).map(section => {

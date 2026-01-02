@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import LoadingScreen from '@/components/LoadingScreen';
-import QuotationViewer from '@/components/QuotationViewer';
+const QuotationViewer = React.lazy(() => import('@/components/QuotationViewer'));
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const AdminLayout = () => {
@@ -17,8 +17,10 @@ const AdminLayout = () => {
       setError(null);
 
       try {
-        // Fetch all quotations first
-        const { data: allData, error: allError } = await supabase.from('quotations').select('*');
+        // Fetch only metadata first to avoid downloading large Base64 logos/favicons/sections_config
+        const { data: allData, error: allError } = await supabase
+          .from('quotations')
+          .select('id, theme_key, project, client, company, title, is_home, is_template, updated_at');
 
         if (allError) {
           throw new Error(`${t('adminLayout.loadError')} ${allError.message}`);
@@ -48,7 +50,14 @@ const AdminLayout = () => {
             throw new Error(t('adminLayout.noHomeNoFallback'));
           }
         } else {
-          setInitialQuotationData(homeDataList[0]);
+          const homeData = homeDataList[0];
+          setInitialQuotationData(homeData);
+
+          // IMPORTANT: Merge the FULL data of the home quotation into themesObject
+          // This ensures the active quotation has all fields (sections_config, logo, etc.)
+          themesObject[homeData.theme_key] = homeData;
+          setAllThemes(themesObject);
+          // Note: We call setAllThemes here again to ensure it includes the full home data
         }
 
       } catch (e) {
@@ -60,10 +69,10 @@ const AdminLayout = () => {
     };
 
     fetchAllData();
-  }, [t]);
+  }, []); // Remove 't' dependency to prevent loop
 
   if (appIsLoading) {
-    return <LoadingScreen message={t('adminLayout.loadingConfig')} />;
+    return <LoadingScreen message="Cargando configuración del sistema..." />;
   }
 
   if (error) {
@@ -76,15 +85,17 @@ const AdminLayout = () => {
   }
 
   if (!initialQuotationData) {
-    return <LoadingScreen message={t('adminLayout.loadingConfig')} />;
+    return <LoadingScreen message="Preparando datos de la cotización..." />;
   }
 
   return (
-    <QuotationViewer
-      initialQuotationData={initialQuotationData}
-      allThemes={allThemes}
-      isAdminView={true}
-    />
+    <React.Suspense fallback={<LoadingScreen message="Cargando visor..." />}>
+      <QuotationViewer
+        initialQuotationData={initialQuotationData}
+        allThemes={allThemes}
+        isAdminView={true}
+      />
+    </React.Suspense>
   );
 };
 

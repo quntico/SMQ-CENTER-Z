@@ -88,7 +88,7 @@ const ProcesoSection = ({ sectionData, isEditorMode, onContentChange }) => {
             <div className="absolute top-0 right-0 z-20">
               <Button
                 onClick={() => setIsModalOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-lg shadow-blue-900/20"
+                className="bg-blue-600 hover:bg-blue-600/90 text-white gap-2 shadow-lg shadow-blue-900/20"
               >
                 <Settings className="w-4 h-4" />
                 Editar Flujo
@@ -131,12 +131,12 @@ const ProcesoSection = ({ sectionData, isEditorMode, onContentChange }) => {
                     whileInView={{ scale: 1 }}
                     viewport={{ once: true, amount: 0.8 }}
                     transition={{ duration: 0.5, type: 'spring' }}
-                    className="row-start-1 sm:col-start-2 sm:row-start-auto z-10 p-3 sm:p-4 bg-gray-900 rounded-full border-2 border-[#2563eb] shadow-[0_0_15px_rgba(37,99,235,0.4)] relative group cursor-pointer"
+                    className="row-start-1 sm:col-start-2 sm:row-start-auto z-10 p-3 sm:p-4 bg-gray-900 rounded-full border-2 border-primary shadow-[0_0_15px_rgba(37,99,235,0.4)] relative group cursor-pointer"
                     onClick={() => isEditorMode && setIsModalOpen(true)}
                   >
                     <IconComponent className="w-6 h-6 sm:w-8 sm:h-8 text-[#2563eb]" />
                     {isEditorMode && (
-                      <div className="absolute inset-0 bg-blue-500/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="absolute inset-0 bg-blue-600/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Edit className="w-4 h-4 text-white" />
                       </div>
                     )}
